@@ -105,6 +105,7 @@ public class PostgresAlterTableGenerator {
 
         // If this is a view, only allow view-compatible operations
         if (randomTable.isView()) {
+<<<<<<< HEAD
             // Remove all non-view operations
             action.removeIf(a -> !VIEW_ACTIONS.contains(a));
             // If no view operations remain, add a random view operation
@@ -114,6 +115,17 @@ public class PostgresAlterTableGenerator {
         } else {
             // Remove view-specific actions if this is a table
             action.removeIf(VIEW_ACTIONS::contains);
+=======
+            // Remove all table-specific operations for views
+            action.removeIf(a -> a != Action.ALTER_VIEW_RENAME_COLUMN);
+            // If no view operations remain, add the rename column action
+            if (action.isEmpty()) {
+                action.add(Action.ALTER_VIEW_RENAME_COLUMN);
+            }
+        } else {
+            // Remove view-specific actions if this is a table
+            action.remove(Action.ALTER_VIEW_RENAME_COLUMN);
+>>>>>>> d997dc86 (Add support for Alter View Rename Column in Postgres v13)
         }
 
         if (randomTable.getColumns().size() == 1) {
