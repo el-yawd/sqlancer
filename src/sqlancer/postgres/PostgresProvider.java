@@ -1,5 +1,8 @@
 package sqlancer.postgres;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.auto.service.AutoService;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -13,11 +16,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.auto.service.AutoService;
-
 import sqlancer.AbstractAction;
 import sqlancer.DatabaseProvider;
 import sqlancer.IgnoreMeException;
@@ -55,7 +53,8 @@ import sqlancer.postgres.gen.PostgresViewGenerator;
 // EXISTS
 // IN
 @AutoService(DatabaseProvider.class)
-public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, PostgresOptions> {
+public class PostgresProvider
+    extends SQLProviderAdapter<PostgresGlobalState, PostgresOptions> {
 
     /**
      * Generate only data types and expressions that are understood by PQS.
@@ -77,14 +76,22 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         super(PostgresGlobalState.class, PostgresOptions.class);
     }
 
-    protected PostgresProvider(Class<PostgresGlobalState> globalClass, Class<PostgresOptions> optionClass) {
+    protected PostgresProvider(
+        Class<PostgresGlobalState> globalClass,
+        Class<PostgresOptions> optionClass
+    ) {
         super(globalClass, optionClass);
     }
 
     public enum Action implements AbstractAction<PostgresGlobalState> {
         ANALYZE(PostgresAnalyzeGenerator::create), //
-        ALTER_TABLE(g -> PostgresAlterTableGenerator.create(g.getSchema().getRandomTable(t -> !t.isView()), g,
-                generateOnlyKnown)), //
+        ALTER_TABLE(g ->
+            PostgresAlterTableGenerator.create(
+                g.getSchema().getRandomTable(t -> !t.isView()),
+                g,
+                generateOnlyKnown
+            )
+        ), //
         CLUSTER(PostgresClusterGenerator::create), //
         COMMIT(g -> {
             SQLQueryAdapter query;
@@ -110,21 +117,23 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         REINDEX(PostgresReindexGenerator::create), //
         SET(PostgresSetGenerator::create), //
         CREATE_INDEX(PostgresIndexGenerator::generate), //
-        SET_CONSTRAINTS((g) -> {
+        SET_CONSTRAINTS(g -> {
             StringBuilder sb = new StringBuilder();
             sb.append("SET CONSTRAINTS ALL ");
             sb.append(Randomly.fromOptions("DEFERRED", "IMMEDIATE"));
             return new SQLQueryAdapter(sb.toString());
         }), //
-        RESET_ROLE((g) -> new SQLQueryAdapter("RESET ROLE")), //
+        RESET_ROLE(g -> new SQLQueryAdapter("RESET ROLE")), //
         COMMENT_ON(PostgresCommentGenerator::generate), //
-        RESET((g) -> new SQLQueryAdapter("RESET ALL") /*
-                                                       * https://www.postgresql.org/docs/13/sql-reset.html TODO: also
-                                                       * configuration parameter
-                                                       */), //
+        RESET(
+            g -> new SQLQueryAdapter("RESET ALL") /*
+             * https://www.postgresql.org/docs/13/sql-reset.html TODO: also
+             * configuration parameter
+             */
+        ), //
         NOTIFY(PostgresNotifyGenerator::createNotify), //
-        LISTEN((g) -> PostgresNotifyGenerator.createListen()), //
-        UNLISTEN((g) -> PostgresNotifyGenerator.createUnlisten()), //
+        LISTEN(g -> PostgresNotifyGenerator.createListen()), //
+        UNLISTEN(g -> PostgresNotifyGenerator.createUnlisten()), //
         CREATE_SEQUENCE(PostgresSequenceGenerator::createSequence), //
         CREATE_VIEW(PostgresViewGenerator::create);
 
@@ -135,7 +144,8 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         }
 
         @Override
-        public SQLQueryAdapter getQuery(PostgresGlobalState state) throws Exception {
+        public SQLQueryAdapter getQuery(PostgresGlobalState state)
+            throws Exception {
             return sqlQueryProvider.getQuery(state);
         }
     }
@@ -144,67 +154,70 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         Randomly r = globalState.getRandomly();
         int nrPerformed;
         switch (a) {
-        case CREATE_INDEX:
-        case CLUSTER:
-            nrPerformed = r.getInteger(0, 3);
-            break;
-        case CREATE_STATISTICS:
-            nrPerformed = r.getInteger(0, 5);
-            break;
-        case ALTER_STATISTICS:
-            nrPerformed = r.getInteger(0, 2);
-            break;
-        case DISCARD:
-        case DROP_INDEX:
-            nrPerformed = r.getInteger(0, 5);
-            break;
-        case COMMIT:
-            nrPerformed = r.getInteger(0, 0);
-            break;
-        case ALTER_TABLE:
-            nrPerformed = r.getInteger(0, 5);
-            break;
-        case REINDEX:
-        case RESET:
-            nrPerformed = r.getInteger(0, 3);
-            break;
-        case DELETE:
-        case RESET_ROLE:
-        case SET:
-            nrPerformed = r.getInteger(0, 5);
-            break;
-        case ANALYZE:
-            nrPerformed = r.getInteger(0, 3);
-            break;
-        case VACUUM:
-        case SET_CONSTRAINTS:
-        case COMMENT_ON:
-        case NOTIFY:
-        case LISTEN:
-        case UNLISTEN:
-        case CREATE_SEQUENCE:
-        case DROP_STATISTICS:
-        case TRUNCATE:
-            nrPerformed = r.getInteger(0, 2);
-            break;
-        case CREATE_VIEW:
-            nrPerformed = r.getInteger(0, 2);
-            break;
-        case UPDATE:
-            nrPerformed = r.getInteger(0, 10);
-            break;
-        case INSERT:
-            nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
-            break;
-        default:
-            throw new AssertionError(a);
+            case CREATE_INDEX:
+            case CLUSTER:
+                nrPerformed = r.getInteger(0, 3);
+                break;
+            case CREATE_STATISTICS:
+                nrPerformed = r.getInteger(0, 5);
+                break;
+            case ALTER_STATISTICS:
+                nrPerformed = r.getInteger(0, 2);
+                break;
+            case DISCARD:
+            case DROP_INDEX:
+                nrPerformed = r.getInteger(0, 5);
+                break;
+            case COMMIT:
+                nrPerformed = r.getInteger(0, 0);
+                break;
+            case ALTER_TABLE:
+                nrPerformed = r.getInteger(0, 5);
+                break;
+            case REINDEX:
+            case RESET:
+                nrPerformed = r.getInteger(0, 3);
+                break;
+            case DELETE:
+            case RESET_ROLE:
+            case SET:
+                nrPerformed = r.getInteger(0, 5);
+                break;
+            case ANALYZE:
+                nrPerformed = r.getInteger(0, 3);
+                break;
+            case VACUUM:
+            case SET_CONSTRAINTS:
+            case COMMENT_ON:
+            case NOTIFY:
+            case LISTEN:
+            case UNLISTEN:
+            case CREATE_SEQUENCE:
+            case DROP_STATISTICS:
+            case TRUNCATE:
+                nrPerformed = r.getInteger(0, 2);
+                break;
+            case CREATE_VIEW:
+                nrPerformed = r.getInteger(0, 2);
+                break;
+            case UPDATE:
+                nrPerformed = r.getInteger(0, 10);
+                break;
+            case INSERT:
+                nrPerformed = r.getInteger(
+                    0,
+                    globalState.getOptions().getMaxNumberInserts()
+                );
+                break;
+            default:
+                throw new AssertionError(a);
         }
         return nrPerformed;
-
     }
 
     @Override
-    public void generateDatabase(PostgresGlobalState globalState) throws Exception {
+    public void generateDatabase(PostgresGlobalState globalState)
+        throws Exception {
         readFunctions(globalState);
         createTables(globalState, Randomly.fromOptions(4, 5, 6));
         prepareTables(globalState);
@@ -217,18 +230,32 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
              * To avoid of a test interference with an extension objects, create them in a separate schema. Of course,
              * they must be truly relocatable.
              */
-            globalState.executeStatement(new SQLQueryAdapter("CREATE SCHEMA extensions;", true));
+            globalState.executeStatement(
+                new SQLQueryAdapter("CREATE SCHEMA extensions;", true)
+            );
             for (int i = 0; i < extensionNames.length; i++) {
-                globalState.executeStatement(new SQLQueryAdapter(
-                        "CREATE EXTENSION " + extensionNames[i] + " WITH SCHEMA extensions;", true));
+                globalState.executeStatement(
+                    new SQLQueryAdapter(
+                        "CREATE EXTENSION " +
+                        extensionNames[i] +
+                        " WITH SCHEMA extensions;",
+                        true
+                    )
+                );
             }
         }
     }
 
     @Override
-    public SQLConnection createDatabase(PostgresGlobalState globalState) throws SQLException {
-        if (globalState.getDbmsSpecificOptions().getTestOracleFactory().stream()
-                .anyMatch((o) -> o == PostgresOracleFactory.PQS)) {
+    public SQLConnection createDatabase(PostgresGlobalState globalState)
+        throws SQLException {
+        if (
+            globalState
+                .getDbmsSpecificOptions()
+                .getTestOracleFactory()
+                .stream()
+                .anyMatch(o -> o == PostgresOracleFactory.PQS)
+        ) {
             generateOnlyKnown = true;
         }
 
@@ -261,7 +288,9 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
                 }
                 int userInfoIndex = entryURL.indexOf(userInfoURI);
                 String preUserInfo = entryURL.substring(0, userInfoIndex);
-                String postUserInfo = entryURL.substring(userInfoIndex + userInfoURI.length() + 1);
+                String postUserInfo = entryURL.substring(
+                    userInfoIndex + userInfoURI.length() + 1
+                );
                 entryURL = preUserInfo + postUserInfo;
             }
             if (pathURI != null) {
@@ -273,20 +302,32 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
             if (port == MainOptions.NO_SET_PORT) {
                 port = uri.getPort();
             }
-            entryURL = String.format("%s://%s:%d/%s", uri.getScheme(), host, port, entryDatabaseName);
+            entryURL = String.format(
+                "%s://%s:%d/%s",
+                uri.getScheme(),
+                host,
+                port,
+                entryDatabaseName
+            );
         } catch (URISyntaxException e) {
             throw new AssertionError(e);
         }
-        Connection con = DriverManager.getConnection("jdbc:" + entryURL, username, password);
-        globalState.getState().logStatement(String.format("\\c %s;", entryDatabaseName));
-        
+        Connection con = DriverManager.getConnection(
+            "jdbc:" + entryURL,
+            username,
+            password
+        );
+        globalState
+            .getState()
+            .logStatement(String.format("\\c %s;", entryDatabaseName));
+
         String dropCommand = "DROP DATABASE";
         boolean forceDrop = Randomly.getBoolean();
         if (forceDrop) {
             dropCommand += " FORCE";
         }
         dropCommand += " IF EXISTS " + databaseName;
-        
+
         globalState.getState().logStatement(dropCommand + ";");
         try (Statement s = con.createStatement()) {
             s.execute(dropCommand);
@@ -302,7 +343,7 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
                 throw e;
             }
         }
-        
+
         // Create database section
         createDatabaseCommand = getCreateDatabaseCommand(globalState);
         globalState.getState().logStatement(createDatabaseCommand + ";");
@@ -312,16 +353,27 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         con.close();
         int databaseIndex = entryURL.indexOf(entryDatabaseName);
         String preDatabaseName = entryURL.substring(0, databaseIndex);
-        String postDatabaseName = entryURL.substring(databaseIndex + entryDatabaseName.length());
+        String postDatabaseName = entryURL.substring(
+            databaseIndex + entryDatabaseName.length()
+        );
         testURL = preDatabaseName + databaseName + postDatabaseName;
-        globalState.getState().logStatement(String.format("\\c %s;", databaseName));
+        globalState
+            .getState()
+            .logStatement(String.format("\\c %s;", databaseName));
 
-        con = DriverManager.getConnection("jdbc:" + testURL, username, password);
+        con = DriverManager.getConnection(
+            "jdbc:" + testURL,
+            username,
+            password
+        );
         return new SQLConnection(con);
     }
 
-    protected void readFunctions(PostgresGlobalState globalState) throws SQLException {
-        SQLQueryAdapter query = new SQLQueryAdapter("SELECT proname, provolatile FROM pg_proc;");
+    protected void readFunctions(PostgresGlobalState globalState)
+        throws SQLException {
+        SQLQueryAdapter query = new SQLQueryAdapter(
+            "SELECT proname, provolatile FROM pg_proc;"
+        );
         SQLancerResultSet rs = query.executeAndGet(globalState);
         while (rs.next()) {
             String functionName = rs.getString(1);
@@ -330,29 +382,42 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         }
     }
 
-    protected void createTables(PostgresGlobalState globalState, int numTables) throws Exception {
+    protected void createTables(PostgresGlobalState globalState, int numTables)
+        throws Exception {
         while (globalState.getSchema().getDatabaseTables().size() < numTables) {
             try {
-                String tableName = DBMSCommon.createTableName(globalState.getSchema().getDatabaseTables().size());
-                SQLQueryAdapter createTable = PostgresTableGenerator.generate(tableName, globalState.getSchema(),
-                        generateOnlyKnown, globalState);
+                String tableName = DBMSCommon.createTableName(
+                    globalState.getSchema().getDatabaseTables().size()
+                );
+                SQLQueryAdapter createTable = PostgresTableGenerator.generate(
+                    tableName,
+                    globalState.getSchema(),
+                    generateOnlyKnown,
+                    globalState
+                );
                 globalState.executeStatement(createTable);
-            } catch (IgnoreMeException e) {
-
-            }
+            } catch (IgnoreMeException e) {}
         }
     }
 
-    protected void prepareTables(PostgresGlobalState globalState) throws Exception {
-        StatementExecutor<PostgresGlobalState, Action> se = new StatementExecutor<>(globalState, Action.values(),
-                PostgresProvider::mapActions, (q) -> {
+    protected void prepareTables(PostgresGlobalState globalState)
+        throws Exception {
+        StatementExecutor<PostgresGlobalState, Action> se =
+            new StatementExecutor<>(
+                globalState,
+                Action.values(),
+                PostgresProvider::mapActions,
+                q -> {
                     if (globalState.getSchema().getDatabaseTables().isEmpty()) {
                         throw new IgnoreMeException();
                     }
-                });
+                }
+            );
         se.executeStatements();
         globalState.executeStatement(new SQLQueryAdapter("COMMIT", true));
-        globalState.executeStatement(new SQLQueryAdapter("SET SESSION statement_timeout = 5000;\n"));
+        globalState.executeStatement(
+            new SQLQueryAdapter("SET SESSION statement_timeout = 5000;\n")
+        );
     }
 
     private String getCreateDatabaseCommand(PostgresGlobalState state) {
@@ -366,11 +431,25 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
                     sb.append("' ");
                 }
                 if (Randomly.getBoolean() && !state.getCollates().isEmpty()) {
-                    sb.append(String.format(" LOCALE = '%s' ", Randomly.fromList(state.getCollates())));
+                    sb.append(
+                        String.format(
+                            " LOCALE = '%s' ",
+                            Randomly.fromList(state.getCollates())
+                        )
+                    );
                 } else {
                     for (String lc : Arrays.asList("LC_COLLATE", "LC_CTYPE")) {
-                        if (!state.getCollates().isEmpty() && Randomly.getBoolean()) {
-                            sb.append(String.format(" %s = '%s'", lc, Randomly.fromList(state.getCollates())));
+                        if (
+                            !state.getCollates().isEmpty() &&
+                            Randomly.getBoolean()
+                        ) {
+                            sb.append(
+                                String.format(
+                                    " %s = '%s'",
+                                    lc,
+                                    Randomly.fromList(state.getCollates())
+                                )
+                            );
                         }
                     }
                 }
@@ -388,7 +467,10 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
     }
 
     @Override
-    public String getQueryPlan(String selectStr, PostgresGlobalState globalState) throws Exception {
+    public String getQueryPlan(
+        String selectStr,
+        PostgresGlobalState globalState
+    ) throws Exception {
         String queryPlan = "";
         if (globalState.getOptions().logEachSelect()) {
             globalState.getLogger().writeCurrent(selectStr);
@@ -398,7 +480,10 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
                 e.printStackTrace();
             }
         }
-        SQLQueryAdapter q = new SQLQueryAdapter(PostgresExplainGenerator.explain(selectStr), null);
+        SQLQueryAdapter q = new SQLQueryAdapter(
+            PostgresExplainGenerator.explain(selectStr),
+            null
+        );
         try (SQLancerResultSet rs = q.executeAndGet(globalState)) {
             while (rs.next()) {
                 queryPlan += rs.getString(1);
@@ -415,17 +500,27 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
     }
 
     @Override
-    protected void executeMutator(int index, PostgresGlobalState globalState) throws Exception {
-        SQLQueryAdapter queryMutateTable = PostgresProvider.Action.values()[index].getQuery(globalState);
+    protected void executeMutator(int index, PostgresGlobalState globalState)
+        throws Exception {
+        SQLQueryAdapter queryMutateTable =
+            PostgresProvider.Action.values()[index].getQuery(globalState);
         globalState.executeStatement(queryMutateTable);
     }
 
     @Override
-    protected boolean addRowsToAllTables(PostgresGlobalState globalState) throws Exception {
-        List<PostgresSchema.PostgresTable> tablesNoRow = globalState.getSchema().getDatabaseTables().stream()
-                .filter(t -> t.getNrRows(globalState) == 0).collect(Collectors.toList());
+    protected boolean addRowsToAllTables(PostgresGlobalState globalState)
+        throws Exception {
+        List<PostgresSchema.PostgresTable> tablesNoRow = globalState
+            .getSchema()
+            .getDatabaseTables()
+            .stream()
+            .filter(t -> t.getNrRows(globalState) == 0)
+            .collect(Collectors.toList());
         for (PostgresSchema.PostgresTable table : tablesNoRow) {
-            SQLQueryAdapter queryAddRows = PostgresInsertGenerator.insertRows(globalState, table);
+            SQLQueryAdapter queryAddRows = PostgresInsertGenerator.insertRows(
+                globalState,
+                table
+            );
             globalState.executeStatement(queryAddRows);
         }
         return true;
@@ -457,5 +552,4 @@ public class PostgresProvider extends SQLProviderAdapter<PostgresGlobalState, Po
         }
         return result;
     }
-
 }
