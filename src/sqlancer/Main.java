@@ -34,7 +34,6 @@ import sqlancer.duckdb.DuckDBProvider;
 import sqlancer.h2.H2Provider;
 import sqlancer.hive.HiveProvider;
 import sqlancer.hsqldb.HSQLDBProvider;
-import sqlancer.turso.TursoProvider;
 import sqlancer.mariadb.MariaDBProvider;
 import sqlancer.materialize.MaterializeProvider;
 import sqlancer.mysql.MySQLProvider;
@@ -44,6 +43,7 @@ import sqlancer.presto.PrestoProvider;
 import sqlancer.questdb.QuestDBProvider;
 import sqlancer.sqlite3.SQLite3Provider;
 import sqlancer.tidb.TiDBProvider;
+import sqlancer.turso.TursoProvider;
 import sqlancer.yugabyte.ycql.YCQLProvider;
 import sqlancer.yugabyte.ysql.YSQLProvider;
 
@@ -265,8 +265,9 @@ public final class Main {
                 throw new UnsupportedOperationException();
             }
             try {
-                getQueryPlanFileWriter()
-                    .append(removeNamesFromQueryPlans(queryPlan));
+                getQueryPlanFileWriter().append(
+                    removeNamesFromQueryPlans(queryPlan)
+                );
                 queryPlanFileWriter.flush();
             } catch (IOException e) {
                 throw new AssertionError();
@@ -676,8 +677,7 @@ public final class Main {
         if (options.printProgressInformation()) {
             startProgressMonitor();
             if (options.printProgressSummary()) {
-                Runtime.getRuntime()
-                    .addShutdownHook(
+                Runtime.getRuntime().addShutdownHook(
                         new Thread(
                             new Runnable() {
                                 @Override
@@ -830,8 +830,7 @@ public final class Main {
                             try {
                                 if (options.logEachSelect()) {
                                     if (
-                                        executor.getLogger()
-                                            .currentFileWriter !=
+                                        executor.getLogger().currentFileWriter !=
                                         null
                                     ) {
                                         executor
