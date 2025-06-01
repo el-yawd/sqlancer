@@ -50,6 +50,7 @@ if __name__ == '__main__':
     name_to_files["Presto"] = get_java_files(os.path.join(cwd, "src", "sqlancer", "presto"))
     name_to_files["QuestDB"] = get_java_files(os.path.join(cwd, "src", "sqlancer", "questdb"))
     name_to_files["SQLite3"] = get_java_files(os.path.join(cwd, "src", "sqlancer", "sqlite3"))
+    name_to_files["Limbo"] = get_java_files(os.path.join(cwd, "src", "sqlancer", "limbo"))
     name_to_files["TiDB"] = get_java_files(os.path.join(cwd, "src", "sqlancer", "tidb"))
     name_to_files["Y"] = get_java_files(os.path.join(cwd, "src", "sqlancer", "yugabyte"))  # has both YCQL and YSQL prefixes
     name_to_files["Doris"] = get_java_files(os.path.join(cwd, "src", "sqlancer", "doris"))

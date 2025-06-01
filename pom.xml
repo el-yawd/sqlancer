@@ -296,10 +296,15 @@
       <artifactId>jdbc-yugabytedb</artifactId>
       <version>42.3.5-yb-1</version>
     </dependency>
-    <dependency>
+    <!-- <dependency>
       <groupId>org.xerial</groupId>
       <artifactId>sqlite-jdbc</artifactId>
       <version>3.47.2.0</version>
+    </dependency> -->
+    <dependency>
+        <groupId>tech.turso</groupId>
+        <artifactId>limbo</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>mysql</groupId>
