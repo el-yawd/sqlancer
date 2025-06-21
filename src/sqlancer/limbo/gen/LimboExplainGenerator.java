@@ -8,10 +8,10 @@ import sqlancer.limbo.LimboProvider.Action;
 
 public final class LimboExplainGenerator {
 
-    private LimboExplainGenerator() {
-    }
+    private LimboExplainGenerator() {}
 
-    public static SQLQueryAdapter explain(LimboGlobalState globalState) throws Exception {
+    public static SQLQueryAdapter explain(LimboGlobalState globalState)
+        throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("EXPLAIN ");
         if (Randomly.getBoolean()) {
@@ -32,5 +32,4 @@ public final class LimboExplainGenerator {
         sb.append(selectStr);
         return sb.toString();
     }
-
 }

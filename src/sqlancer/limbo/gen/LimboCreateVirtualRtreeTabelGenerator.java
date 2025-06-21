@@ -2,7 +2,6 @@ package sqlancer.limbo.gen;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
 import sqlancer.common.DBMSCommon;
@@ -13,18 +12,27 @@ import sqlancer.limbo.schema.LimboSchema.LimboColumn;
 
 public final class LimboCreateVirtualRtreeTabelGenerator {
 
-    private LimboCreateVirtualRtreeTabelGenerator() {
-    }
+    private LimboCreateVirtualRtreeTabelGenerator() {}
 
-    public static SQLQueryAdapter createRandomTableStatement(LimboGlobalState globalState) {
-        if (globalState.getSchema().getTables().getTables()
-                .size() > globalState.getDbmsSpecificOptions().maxNumTables) {
+    public static SQLQueryAdapter createRandomTableStatement(
+        LimboGlobalState globalState
+    ) {
+        if (
+            globalState.getSchema().getTables().getTables().size() >
+            globalState.getDbmsSpecificOptions().maxNumTables
+        ) {
             throw new IgnoreMeException();
         }
-        return createTableStatement(globalState.getSchema().getFreeRtreeTableName(), globalState);
+        return createTableStatement(
+            globalState.getSchema().getFreeRtreeTableName(),
+            globalState
+        );
     }
 
-    public static SQLQueryAdapter createTableStatement(String rTreeTableName, LimboGlobalState globalState) {
+    public static SQLQueryAdapter createTableStatement(
+        String rTreeTableName,
+        LimboGlobalState globalState
+    ) {
         ExpectedErrors errors = new ExpectedErrors();
         List<LimboColumn> columns = new ArrayList<>();
         StringBuilder sb = new StringBuilder("CREATE VIRTUAL TABLE ");
@@ -45,9 +53,15 @@ public final class LimboCreateVirtualRtreeTabelGenerator {
             sb.append(", ");
             sb.append("+");
             String columnName = DBMSCommon.createColumnName(size + i);
-            LimboColumnBuilder columnBuilder = new LimboColumnBuilder().allowPrimaryKey(false).allowNotNull(false)
-                    .allowUnique(false).allowCheck(false);
-            String c = columnBuilder.createColumn(columnName, globalState, columns);
+            LimboColumnBuilder columnBuilder = new LimboColumnBuilder()
+                .allowPrimaryKey(false)
+                .allowNotNull(false)
+                .allowUnique(false);
+            String c = columnBuilder.createColumn(
+                columnName,
+                globalState,
+                columns
+            );
             sb.append(c);
             sb.append(" ");
         }
@@ -58,5 +72,4 @@ public final class LimboCreateVirtualRtreeTabelGenerator {
         errors.add("Too many columns for an rtree table");
         return new SQLQueryAdapter(sb.toString(), errors, true);
     }
-
 }

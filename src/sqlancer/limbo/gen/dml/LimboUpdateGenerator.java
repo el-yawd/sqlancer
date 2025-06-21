@@ -2,7 +2,6 @@ package sqlancer.limbo.gen.dml;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
 import sqlancer.Randomly;
 import sqlancer.common.gen.AbstractUpdateGenerator;
 import sqlancer.common.query.SQLQueryAdapter;
@@ -25,29 +24,28 @@ public class LimboUpdateGenerator extends AbstractUpdateGenerator<LimboColumn> {
     }
 
     public static SQLQueryAdapter updateRow(LimboGlobalState globalState) {
-        LimboTable randomTableNoViewOrBailout = globalState.getSchema()
-                .getRandomTableOrBailout(t -> !t.isView() && !t.isReadOnly());
+        LimboTable randomTableNoViewOrBailout = globalState
+            .getSchema()
+            .getRandomTableOrBailout(t -> !t.isView() && !t.isReadOnly());
         return updateRow(globalState, randomTableNoViewOrBailout);
     }
 
-    public static SQLQueryAdapter updateRow(LimboGlobalState globalState, LimboTable table) {
-        LimboUpdateGenerator generator = new LimboUpdateGenerator(globalState, globalState.getRandomly());
+    public static SQLQueryAdapter updateRow(
+        LimboGlobalState globalState,
+        LimboTable table
+    ) {
+        LimboUpdateGenerator generator = new LimboUpdateGenerator(
+            globalState,
+            globalState.getRandomly()
+        );
         return generator.generate(table);
     }
 
     private SQLQueryAdapter generate(LimboTable table) {
-        List<LimboColumn> columnsToUpdate = Randomly.nonEmptySubsetPotentialDuplicates(table.getColumns());
+        List<LimboColumn> columnsToUpdate =
+            Randomly.nonEmptySubsetPotentialDuplicates(table.getColumns());
         sb.append("UPDATE ");
-        if (Randomly.getBoolean()) {
-            sb.append("OR IGNORE ");
-        } else {
-            if (Randomly.getBoolean()) {
-                String fromOptions = Randomly.fromOptions("OR ROLLBACK", "OR ABORT", "OR REPLACE", "OR FAIL");
-                sb.append(fromOptions);
-                sb.append(" ");
-            }
-            errors.add("[SQLITE_CONSTRAINT]");
-        }
+
         // TODO Beginning in SQLite version 3.15.0 (2016-10-14), an assignment in the
         // SET clause can be a parenthesized list of column names on the left and a row
         // value of the same size on the right.
@@ -56,7 +54,12 @@ public class LimboUpdateGenerator extends AbstractUpdateGenerator<LimboColumn> {
         sb.append(" SET ");
         if (Randomly.getBoolean()) {
             sb.append("(");
-            sb.append(columnsToUpdate.stream().map(c -> c.getName()).collect(Collectors.joining(", ")));
+            sb.append(
+                columnsToUpdate
+                    .stream()
+                    .map(c -> c.getName())
+                    .collect(Collectors.joining(", "))
+            );
             sb.append(")");
             sb.append("=");
             sb.append("(");
@@ -75,7 +78,10 @@ public class LimboUpdateGenerator extends AbstractUpdateGenerator<LimboColumn> {
         if (Randomly.getBoolean()) {
             sb.append(" WHERE ");
             String whereClause = LimboVisitor.asString(
-                    new LimboExpressionGenerator(globalState).setColumns(table.getColumns()).generateExpression());
+                new LimboExpressionGenerator(globalState)
+                    .setColumns(table.getColumns())
+                    .generateExpression()
+            );
             sb.append(whereClause);
         }
 
@@ -88,9 +94,12 @@ public class LimboUpdateGenerator extends AbstractUpdateGenerator<LimboColumn> {
 
         LimboErrors.addInsertUpdateErrors(errors);
 
-        errors.add("[SQLITE_ERROR] SQL error or missing database (parser stack overflow)");
         errors.add(
-                "[SQLITE_ERROR] SQL error or missing database (second argument to likelihood() must be a constant between 0.0 and 1.0)");
+            "[SQLITE_ERROR] SQL error or missing database (parser stack overflow)"
+        );
+        errors.add(
+            "[SQLITE_ERROR] SQL error or missing database (second argument to likelihood() must be a constant between 0.0 and 1.0)"
+        );
         // for views
         errors.add("ORDER BY term out of range");
         errors.add("unknown function: json_type");
@@ -98,17 +107,27 @@ public class LimboUpdateGenerator extends AbstractUpdateGenerator<LimboColumn> {
         LimboErrors.addInsertNowErrors(errors);
         LimboErrors.addExpectedExpressionErrors(errors);
         LimboErrors.addDeleteErrors(errors);
-        return new SQLQueryAdapter(sb.toString(), errors, true /* column could have an ON UPDATE clause */);
-
+        return new SQLQueryAdapter(
+            sb.toString(),
+            errors,
+            true/* column could have an ON UPDATE clause */
+        );
     }
 
     @Override
     protected void updateValue(LimboColumn column) {
         if (column.isIntegerPrimaryKey()) {
-            sb.append(LimboVisitor.asString(LimboConstant.createIntConstant(r.getInteger())));
+            sb.append(
+                LimboVisitor.asString(
+                    LimboConstant.createIntConstant(r.getInteger())
+                )
+            );
         } else {
-            sb.append(LimboVisitor.asString(LimboExpressionGenerator.getRandomLiteralValue(globalState)));
+            sb.append(
+                LimboVisitor.asString(
+                    LimboExpressionGenerator.getRandomLiteralValue(globalState)
+                )
+            );
         }
     }
-
 }

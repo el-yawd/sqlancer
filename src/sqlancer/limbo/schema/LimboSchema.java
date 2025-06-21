@@ -467,7 +467,7 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         List<LimboColumn> databaseColumns = new ArrayList<>();
         try (Statement s2 = con.createStatement()) {
             String tableInfoStr = String.format(
-                "PRAGMA table_xinfo(%s)",
+                "PRAGMA table_info(%s)",
                 tableName
             );
             try (ResultSet columnRs = s2.executeQuery(tableInfoStr)) {
