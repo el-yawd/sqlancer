@@ -1,17 +1,15 @@
 package sqlancer.limbo;
 
+import com.google.auto.service.AutoService;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.sql.Connection;
-
-import com.google.auto.service.AutoService;
-
 import sqlancer.AbstractAction;
 import sqlancer.DatabaseProvider;
 import sqlancer.IgnoreMeException;
@@ -47,14 +45,18 @@ import sqlancer.limbo.gen.dml.LimboUpdateGenerator;
 import sqlancer.limbo.schema.LimboSchema.LimboTable;
 
 @AutoService(DatabaseProvider.class)
-public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOptions> {
+public class LimboProvider
+    extends SQLProviderAdapter<LimboGlobalState, LimboOptions> {
 
     public static boolean allowFloatingPointFp = true;
     public static boolean mustKnowResult;
 
     // PRAGMAS to achieve good performance
-    private static final List<String> DEFAULT_PRAGMAS = Arrays.asList("PRAGMA cache_size = 50000;",
-            "PRAGMA temp_store=MEMORY;", "PRAGMA synchronous=off;");
+    private static final List<String> DEFAULT_PRAGMAS = Arrays.asList(
+        "PRAGMA cache_size = 50000;",
+        "PRAGMA temp_store=MEMORY;",
+        "PRAGMA synchronous=off;"
+    );
 
     public LimboProvider() {
         super(LimboGlobalState.class, LimboOptions.class);
@@ -66,8 +68,12 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
         CREATE_VIEW(LimboViewGenerator::generate), // 2
         CREATE_TRIGGER(LimboCreateTriggerGenerator::create), // 3
         CREATE_TABLE(LimboTableGenerator::createRandomTableStatement), // 4
-        CREATE_VIRTUALTABLE(LimboCreateVirtualFTSTableGenerator::createRandomTableStatement), // 5
-        CREATE_RTREETABLE(LimboCreateVirtualRtreeTabelGenerator::createRandomTableStatement), // 6
+        CREATE_VIRTUALTABLE(
+            LimboCreateVirtualFTSTableGenerator::createRandomTableStatement
+        ), // 5
+        CREATE_RTREETABLE(
+            LimboCreateVirtualRtreeTabelGenerator::createRandomTableStatement
+        ), // 6
         INSERT(LimboInsertGenerator::insertRow), // 7
         DELETE(LimboDeleteGenerator::deleteContent), // 8
         ALTER(LimboAlterTable::alterTable), // 9
@@ -79,10 +85,18 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
         REINDEX(LimboReindexGenerator::executeReindex), // 15
         ANALYZE(LimboAnalyzeGenerator::generateAnalyze), // 16
         EXPLAIN(LimboExplainGenerator::explain), // 17
-        CHECK_RTREE_TABLE((g) -> {
-            LimboTable table = g.getSchema().getRandomTableOrBailout(t -> t.getName().startsWith("r"));
-            String format = String.format("SELECT rtreecheck('%s');", table.getName());
-            return new SQLQueryAdapter(format, ExpectedErrors.from("The database file is locked"));
+        CHECK_RTREE_TABLE(g -> {
+            LimboTable table = g
+                .getSchema()
+                .getRandomTableOrBailout(t -> t.getName().startsWith("r"));
+            String format = String.format(
+                "SELECT rtreecheck('%s');",
+                table.getName()
+            );
+            return new SQLQueryAdapter(
+                format,
+                ExpectedErrors.from("The database file is locked")
+            );
         }), // 18
         VIRTUAL_TABLE_ACTION(LimboVirtualFTSTableCommandGenerator::create), // 19
         MANIPULATE_STAT_TABLE(LimboStatTableGenerator::getQuery), // 20
@@ -91,9 +105,10 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
             public boolean canBeRetried() {
                 return false;
             }
-
         }, // 21
-        ROLLBACK_TRANSACTION(LimboTransactionGenerator::generateRollbackTransaction) {
+        ROLLBACK_TRANSACTION(
+            LimboTransactionGenerator::generateRollbackTransaction
+        ) {
             @Override
             public boolean canBeRetried() {
                 return false;
@@ -113,13 +128,16 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
         }
 
         @Override
-        public SQLQueryAdapter getQuery(LimboGlobalState state) throws Exception {
+        public SQLQueryAdapter getQuery(LimboGlobalState state)
+            throws Exception {
             return sqlQueryProvider.getQuery(state);
         }
     }
 
     private enum TableType {
-        NORMAL, FTS, RTREE
+        NORMAL,
+        FTS,
+        RTREE,
     }
 
     private static int mapActions(LimboGlobalState globalState, Action a) {
@@ -147,7 +165,10 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
                 nrPerformed = r.getInteger(0, 3);
                 break;
             case INSERT:
-                nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+                nrPerformed = r.getInteger(
+                    0,
+                    globalState.getOptions().getMaxNumberInserts()
+                );
                 break;
             case MANIPULATE_STAT_TABLE:
                 nrPerformed = r.getInteger(0, 5);
@@ -180,12 +201,12 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
     }
 
     @Override
-    public void generateDatabase(LimboGlobalState globalState) throws Exception {
+    public void generateDatabase(LimboGlobalState globalState)
+        throws Exception {
         Randomly r = new Randomly(LimboSpecialStringGenerator::generate);
         globalState.setRandomly(r);
         if (globalState.getDbmsSpecificOptions().generateDatabase) {
-
-            addSensiblePragmaDefaults(globalState);
+            // addSensiblePragmaDefaults(globalState);
             int nrTablesToCreate = 1;
             if (Randomly.getBoolean()) {
                 nrTablesToCreate++;
@@ -198,47 +219,84 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
             do {
                 SQLQueryAdapter tableQuery = getTableQuery(globalState, i++);
                 globalState.executeStatement(tableQuery);
-            } while (globalState.getSchema().getDatabaseTables().size() < nrTablesToCreate);
-            assert globalState.getSchema().getTables().getTables().size() == nrTablesToCreate;
+            } while (
+                globalState.getSchema().getDatabaseTables().size() <
+                nrTablesToCreate
+            );
+            assert globalState.getSchema().getTables().getTables().size() ==
+            nrTablesToCreate;
             checkTablesForGeneratedColumnLoops(globalState);
-            if (globalState.getDbmsSpecificOptions().testDBStats && Randomly.getBooleanWithSmallProbability()) {
+            if (
+                globalState.getDbmsSpecificOptions().testDBStats &&
+                Randomly.getBooleanWithSmallProbability()
+            ) {
                 SQLQueryAdapter tableQuery = new SQLQueryAdapter(
-                        "CREATE VIRTUAL TABLE IF NOT EXISTS stat USING dbstat(main)");
+                    "CREATE VIRTUAL TABLE IF NOT EXISTS stat USING dbstat(main)"
+                );
                 globalState.executeStatement(tableQuery);
             }
-            StatementExecutor<LimboGlobalState, Action> se = new StatementExecutor<>(globalState, Action.values(),
-                    LimboProvider::mapActions, (q) -> {
-                        if (q.couldAffectSchema() && globalState.getSchema().getDatabaseTables().isEmpty()) {
+            StatementExecutor<LimboGlobalState, Action> se =
+                new StatementExecutor<>(
+                    globalState,
+                    Action.values(),
+                    LimboProvider::mapActions,
+                    q -> {
+                        if (
+                            q.couldAffectSchema() &&
+                            globalState
+                                .getSchema()
+                                .getDatabaseTables()
+                                .isEmpty()
+                        ) {
                             throw new IgnoreMeException();
                         }
-                    });
+                    }
+                );
             se.executeStatements();
 
-            SQLQueryAdapter query = LimboTransactionGenerator.generateCommit(globalState);
+            SQLQueryAdapter query = LimboTransactionGenerator.generateCommit(
+                globalState
+            );
             globalState.executeStatement(query);
 
             // also do an abort for DEFERRABLE INITIALLY DEFERRED
-            query = LimboTransactionGenerator.generateRollbackTransaction(globalState);
+            query = LimboTransactionGenerator.generateRollbackTransaction(
+                globalState
+            );
             globalState.executeStatement(query);
         }
     }
 
-    private void checkTablesForGeneratedColumnLoops(LimboGlobalState globalState) throws Exception {
+    private void checkTablesForGeneratedColumnLoops(
+        LimboGlobalState globalState
+    ) throws Exception {
         for (LimboTable table : globalState.getSchema().getDatabaseTables()) {
-            SQLQueryAdapter q = new SQLQueryAdapter("SELECT * FROM " + table.getName(),
-                    ExpectedErrors.from("needs an odd number of arguments", " requires an even number of arguments",
-                            "generated column loop", "integer overflow", "malformed JSON",
-                            "JSON cannot hold BLOB values", "JSON path error", "labels must be TEXT",
-                            "table does not support scanning"));
+            SQLQueryAdapter q = new SQLQueryAdapter(
+                "SELECT * FROM " + table.getName(),
+                ExpectedErrors.from(
+                    "needs an odd number of arguments",
+                    " requires an even number of arguments",
+                    "generated column loop",
+                    "integer overflow",
+                    "malformed JSON",
+                    "JSON cannot hold BLOB values",
+                    "JSON path error",
+                    "labels must be TEXT",
+                    "table does not support scanning"
+                )
+            );
             if (!q.execute(globalState)) {
                 throw new IgnoreMeException();
             }
         }
     }
 
-    private SQLQueryAdapter getTableQuery(LimboGlobalState globalState, int i) throws AssertionError {
+    private SQLQueryAdapter getTableQuery(LimboGlobalState globalState, int i)
+        throws AssertionError {
         SQLQueryAdapter tableQuery;
-        List<TableType> options = new ArrayList<>(Arrays.asList(TableType.values()));
+        List<TableType> options = new ArrayList<>(
+            Arrays.asList(TableType.values())
+        );
         if (!globalState.getDbmsSpecificOptions().testFts) {
             options.remove(TableType.FTS);
         }
@@ -248,16 +306,26 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
         switch (Randomly.fromList(options)) {
             case NORMAL:
                 String tableName = DBMSCommon.createTableName(i);
-                tableQuery = LimboTableGenerator.createTableStatement(tableName, globalState);
+                tableQuery = LimboTableGenerator.createTableStatement(
+                    tableName,
+                    globalState
+                );
                 break;
             case FTS:
                 String ftsTableName = "v" + DBMSCommon.createTableName(i);
-                tableQuery = LimboCreateVirtualFTSTableGenerator.createTableStatement(ftsTableName,
-                        globalState.getRandomly());
+                tableQuery =
+                    LimboCreateVirtualFTSTableGenerator.createTableStatement(
+                        ftsTableName,
+                        globalState.getRandomly()
+                    );
                 break;
             case RTREE:
                 String rTreeTableName = "rt" + i;
-                tableQuery = LimboCreateVirtualRtreeTabelGenerator.createTableStatement(rTreeTableName, globalState);
+                tableQuery =
+                    LimboCreateVirtualRtreeTabelGenerator.createTableStatement(
+                        rTreeTableName,
+                        globalState
+                    );
                 break;
             default:
                 throw new AssertionError();
@@ -265,19 +333,37 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
         return tableQuery;
     }
 
-    private void addSensiblePragmaDefaults(LimboGlobalState globalState) throws Exception {
+    private void addSensiblePragmaDefaults(LimboGlobalState globalState)
+        throws Exception {
         List<String> pragmasToExecute = new ArrayList<>();
         if (!Randomly.getBooleanWithSmallProbability()) {
             pragmasToExecute.addAll(DEFAULT_PRAGMAS);
         }
-        if (Randomly.getBoolean() && globalState.getDbmsSpecificOptions().oracles != LimboOracleFactory.PQS) {
+        if (
+            Randomly.getBoolean() &&
+            globalState.getDbmsSpecificOptions().oracles !=
+            LimboOracleFactory.PQS
+        ) {
             // the PQS implementation currently assumes the default behavior of LIKE
             pragmasToExecute.add("PRAGMA case_sensitive_like=ON;");
         }
-        if (Randomly.getBoolean() && globalState.getDbmsSpecificOptions().oracles != LimboOracleFactory.PQS) {
+        if (
+            Randomly.getBoolean() &&
+            globalState.getDbmsSpecificOptions().oracles !=
+            LimboOracleFactory.PQS
+        ) {
             // the encoding has an influence how binary strings are cast
-            pragmasToExecute.add(String.format("PRAGMA encoding = '%s';",
-                    Randomly.fromOptions("UTF-8", "UTF-16", "UTF-16le", "UTF-16be")));
+            pragmasToExecute.add(
+                String.format(
+                    "PRAGMA encoding = '%s';",
+                    Randomly.fromOptions(
+                        "UTF-8",
+                        "UTF-16",
+                        "UTF-16le",
+                        "UTF-16be"
+                    )
+                )
+            );
         }
         for (String s : pragmasToExecute) {
             globalState.executeStatement(new SQLQueryAdapter(s));
@@ -285,13 +371,18 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
     }
 
     @Override
-    public SQLConnection createDatabase(LimboGlobalState globalState) throws SQLException {
+    public SQLConnection createDatabase(LimboGlobalState globalState)
+        throws SQLException {
         File dir = new File("." + File.separator + "databases");
         if (!dir.exists()) {
             dir.mkdir();
         }
         File dataBase = new File(dir, globalState.getDatabaseName() + ".db");
-        if (dataBase.exists() && ((LimboGlobalState) globalState).getDbmsSpecificOptions().deleteIfExists) {
+        if (
+            dataBase.exists() &&
+            ((LimboGlobalState) globalState).getDbmsSpecificOptions()
+                .deleteIfExists
+        ) {
             dataBase.delete();
         }
         String url = "jdbc:sqlite:" + dataBase.getAbsolutePath();
@@ -306,7 +397,8 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
     }
 
     @Override
-    public String getQueryPlan(String selectStr, LimboGlobalState globalState) throws Exception {
+    public String getQueryPlan(String selectStr, LimboGlobalState globalState)
+        throws Exception {
         String queryPlan = "";
         if (globalState.getOptions().logEachSelect()) {
             globalState.getLogger().writeCurrent(selectStr);
@@ -323,7 +415,10 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
         LimboErrors.addQueryErrors(errors);
         LimboErrors.addInsertUpdateErrors(errors);
 
-        SQLQueryAdapter q = new SQLQueryAdapter(LimboExplainGenerator.explain(selectStr), errors);
+        SQLQueryAdapter q = new SQLQueryAdapter(
+            LimboExplainGenerator.explain(selectStr),
+            errors
+        );
         try (SQLancerResultSet rs = q.executeAndGet(globalState)) {
             if (rs != null) {
                 while (rs.next()) {
@@ -342,18 +437,28 @@ public class LimboProvider extends SQLProviderAdapter<LimboGlobalState, LimboOpt
     }
 
     @Override
-    protected void executeMutator(int index, LimboGlobalState globalState) throws Exception {
-        SQLQueryAdapter queryMutateTable = Action.values()[index].getQuery(globalState);
+    protected void executeMutator(int index, LimboGlobalState globalState)
+        throws Exception {
+        SQLQueryAdapter queryMutateTable = Action.values()[index].getQuery(
+                globalState
+            );
         globalState.executeStatement(queryMutateTable);
-
     }
 
     @Override
-    protected boolean addRowsToAllTables(LimboGlobalState globalState) throws Exception {
-        List<LimboTable> tablesNoRow = globalState.getSchema().getDatabaseTables().stream()
-                .filter(t -> t.getNrRows(globalState) == 0).collect(Collectors.toList());
+    protected boolean addRowsToAllTables(LimboGlobalState globalState)
+        throws Exception {
+        List<LimboTable> tablesNoRow = globalState
+            .getSchema()
+            .getDatabaseTables()
+            .stream()
+            .filter(t -> t.getNrRows(globalState) == 0)
+            .collect(Collectors.toList());
         for (LimboTable table : tablesNoRow) {
-            SQLQueryAdapter queryAddRows = LimboInsertGenerator.insertRow(globalState, table);
+            SQLQueryAdapter queryAddRows = LimboInsertGenerator.insertRow(
+                globalState,
+                table
+            );
             globalState.executeStatement(queryAddRows);
         }
 
