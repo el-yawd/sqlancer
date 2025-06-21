@@ -1,86 +1,152 @@
 package sqlancer.limbo;
 
-import java.util.Arrays;
-import java.util.List;
-
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
-
+import java.util.Arrays;
+import java.util.List;
 import sqlancer.DBMSSpecificOptions;
 
 @Parameters(separators = "=", commandDescription = "Limbo")
 public class LimboOptions implements DBMSSpecificOptions<LimboOracleFactory> {
 
-    @Parameter(names = { "--test-fts" }, description = "Test the FTS extensions", arity = 1)
+    @Parameter(
+        names = { "--test-fts" },
+        description = "Test the FTS extensions",
+        arity = 1
+    )
     public boolean testFts = true;
 
-    @Parameter(names = { "--test-rtree" }, description = "Test the R*Tree extensions", arity = 1)
+    @Parameter(
+        names = { "--test-rtree" },
+        description = "Test the R*Tree extensions",
+        arity = 1
+    )
     public boolean testRtree = true;
 
-    @Parameter(names = {
-            "--test-dbstats" }, description = "Test the DBSTAT Virtual Table (see https://www.sqlite.org/dbstat.html)", arity = 1)
+    @Parameter(
+        names = { "--test-dbstats" },
+        description = "Test the DBSTAT Virtual Table (see https://www.sqlite.org/dbstat.html)",
+        arity = 1
+    )
     public boolean testDBStats;
 
-    @Parameter(names = { "--test-generated-columns" }, description = "Test generated columns", arity = 1)
-    public boolean testGeneratedColumns = true;
+    @Parameter(
+        names = { "--test-generated-columns" },
+        description = "Test generated columns",
+        arity = 1
+    )
+    public boolean testGeneratedColumns = false;
 
-    @Parameter(names = { "--test-foreign-keys" }, description = "Test foreign key constraints", arity = 1)
-    public boolean testForeignKeys = true;
+    @Parameter(
+        names = { "--test-foreign-keys" },
+        description = "Test foreign key constraints",
+        arity = 1
+    )
+    public boolean testForeignKeys = false;
 
-    @Parameter(names = { "--test-without-rowids" }, description = "Generate WITHOUT ROWID tables", arity = 1)
-    public boolean testWithoutRowids = true;
+    @Parameter(
+        names = { "--test-without-rowids" },
+        description = "Generate WITHOUT ROWID tables",
+        arity = 1
+    )
+    public boolean testWithoutRowids = false;
 
-    @Parameter(names = { "--test-temp-tables" }, description = "Generate TEMP/TEMPORARY tables", arity = 1)
-    public boolean testTempTables = true;
+    @Parameter(
+        names = { "--test-temp-tables" },
+        description = "Generate TEMP/TEMPORARY tables",
+        arity = 1
+    )
+    public boolean testTempTables = false;
 
-    @Parameter(names = { "--test-check-constraints" }, description = "Allow CHECK constraints in tables", arity = 1)
-    public boolean testCheckConstraints = true;
+    @Parameter(
+        names = { "--test-check-constraints" },
+        description = "Allow CHECK constraints in tables",
+        arity = 1
+    )
+    public boolean testCheckConstraints = false;
 
-    @Parameter(names = {
-            "--test-nulls-first-last" }, description = "Allow NULLS FIRST/NULLS LAST in ordering terms", arity = 1)
-    public boolean testNullsFirstLast = true;
+    @Parameter(
+        names = { "--test-nulls-first-last" },
+        description = "Allow NULLS FIRST/NULLS LAST in ordering terms",
+        arity = 1
+    )
+    public boolean testNullsFirstLast = false;
 
-    @Parameter(names = { "--test-joins" }, description = "Allow the generation of JOIN clauses", arity = 1)
+    @Parameter(
+        names = { "--test-joins" },
+        description = "Allow the generation of JOIN clauses",
+        arity = 1
+    )
     public boolean testJoins = true;
 
-    @Parameter(names = {
-            "--test-functions" }, description = "Allow the generation of functions in expressions", arity = 1)
+    @Parameter(
+        names = { "--test-functions" },
+        description = "Allow the generation of functions in expressions",
+        arity = 1
+    )
     public boolean testFunctions = true;
 
-    @Parameter(names = {
-            "--test-soundex" }, description = "Test the soundex function, which can be enabled using a compile-time option.", arity = 1)
-    public boolean testSoundex;
+    @Parameter(
+        names = { "--test-soundex" },
+        description = "Test the soundex function, which can be enabled using a compile-time option.",
+        arity = 1
+    )
+    public boolean testSoundex = false;
 
-    @Parameter(names = { "--test-match" }, description = "Allow the generation of the MATCH operator", arity = 1)
-    public boolean testMatch = true;
+    @Parameter(
+        names = { "--test-match" },
+        description = "Allow the generation of the MATCH operator",
+        arity = 1
+    )
+    public boolean testMatch = false;
 
-    @Parameter(names = { "--test-in-operator" }, description = "Allow the generation of the IN operator", arity = 1)
+    @Parameter(
+        names = { "--test-in-operator" },
+        description = "Allow the generation of the IN operator",
+        arity = 1
+    )
     public boolean testIn = true;
 
-    @Parameter(names = {
-            "--test-distinct-in-view" }, description = "DISTINCT in views might cause occasional false positives in NoREC and TLP", arity = 1)
-    public boolean testDistinctInView;
+    @Parameter(
+        names = { "--test-distinct-in-view" },
+        description = "DISTINCT in views might cause occasional false positives in NoREC and TLP",
+        arity = 1
+    )
+    public boolean testDistinctInView = false;
 
     @Parameter(names = "--oracle")
     public LimboOracleFactory oracles = LimboOracleFactory.NoREC;
 
-    @Parameter(names = {
-            "--delete-existing-databases" }, description = "Delete a database file if it already exists", arity = 1)
+    @Parameter(
+        names = { "--delete-existing-databases" },
+        description = "Delete a database file if it already exists",
+        arity = 1
+    )
     public boolean deleteIfExists = true;
 
-    @Parameter(names = {
-            "--generate-new-database" }, description = "Specifies whether new databases should be generated", arity = 1)
+    @Parameter(
+        names = { "--generate-new-database" },
+        description = "Specifies whether new databases should be generated",
+        arity = 1
+    )
     public boolean generateDatabase = true;
 
-    @Parameter(names = {
-            "--max-num-tables" }, description = "The maximum number of tables/virtual tables/ rtree tables/ views that can be created")
+    @Parameter(
+        names = { "--max-num-tables" },
+        description = "The maximum number of tables/virtual tables/ rtree tables/ views that can be created"
+    )
     public int maxNumTables = 10;
 
-    @Parameter(names = { "--max-num-indexes" }, description = "The maximum number of indexes that can be created")
+    @Parameter(
+        names = { "--max-num-indexes" },
+        description = "The maximum number of indexes that can be created"
+    )
     public int maxNumIndexes = 20;
 
     public enum CODDTestModel {
-        RANDOM, EXPRESSION, SUBQUERY;
+        RANDOM,
+        EXPRESSION,
+        SUBQUERY;
 
         public boolean isRandom() {
             return this == RANDOM;
@@ -95,12 +161,14 @@ public class LimboOptions implements DBMSSpecificOptions<LimboOracleFactory> {
         }
     }
 
-    @Parameter(names = { "--coddtest-model" }, description = "Apply CODDTest on EXPRESSION, SUBQUERY, or RANDOM")
+    @Parameter(
+        names = { "--coddtest-model" },
+        description = "Apply CODDTest on EXPRESSION, SUBQUERY, or RANDOM"
+    )
     public CODDTestModel coddTestModel = CODDTestModel.RANDOM;
 
     @Override
     public List<LimboOracleFactory> getTestOracleFactory() {
         return Arrays.asList(oracles);
     }
-
 }

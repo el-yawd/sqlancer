@@ -22,13 +22,10 @@ import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.common.query.SQLQueryProvider;
 import sqlancer.common.query.SQLancerResultSet;
-import sqlancer.limbo.gen.LimboCreateVirtualRtreeTabelGenerator;
 import sqlancer.limbo.gen.LimboExplainGenerator;
 import sqlancer.limbo.gen.LimboPragmaGenerator;
 import sqlancer.limbo.gen.LimboTransactionGenerator;
-import sqlancer.limbo.gen.LimboVirtualFTSTableCommandGenerator;
 import sqlancer.limbo.gen.ddl.LimboAlterTable;
-import sqlancer.limbo.gen.ddl.LimboCreateVirtualFTSTableGenerator;
 import sqlancer.limbo.gen.ddl.LimboDropTableGenerator;
 import sqlancer.limbo.gen.ddl.LimboTableGenerator;
 import sqlancer.limbo.gen.dml.LimboDeleteGenerator;
@@ -55,8 +52,7 @@ public class LimboProvider
         ALTER(LimboAlterTable::alterTable),
         UPDATE(LimboUpdateGenerator::updateRow),
         DROP_TABLE(LimboDropTableGenerator::dropTable),
-        EXPLAIN(LimboExplainGenerator::explain),
-        VIRTUAL_TABLE_ACTION(LimboVirtualFTSTableCommandGenerator::create);
+        EXPLAIN(LimboExplainGenerator::explain);
 
         private final SQLQueryProvider<LimboGlobalState> sqlQueryProvider;
 
