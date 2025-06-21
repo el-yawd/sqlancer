@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
 import sqlancer.SQLConnection;
@@ -31,8 +30,8 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
     /**
      * All possible aliases for the rowid column.
      */
-    public static final List<String> ROWID_STRINGS = Collections
-            .unmodifiableList(Arrays.asList("rowid", "_rowid_", "oid"));
+    public static final List<String> ROWID_STRINGS =
+        Collections.unmodifiableList(Arrays.asList("rowid", "_rowid_", "oid"));
     private final List<String> indexNames;
 
     public List<String> getIndexNames() {
@@ -47,7 +46,8 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         }
     }
 
-    public static class LimboColumn extends AbstractTableColumn<LimboTable, LimboDataType> {
+    public static class LimboColumn
+        extends AbstractTableColumn<LimboTable, LimboDataType> {
 
         private final boolean isInteger; // "INTEGER" type, not "INT"
         private final LimboCollateSequence collate;
@@ -55,15 +55,22 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         private final boolean isPrimaryKey;
 
         public enum LimboCollateSequence {
-            NOCASE, RTRIM, BINARY;
+            NOCASE,
+            RTRIM,
+            BINARY;
 
             public static LimboCollateSequence random() {
                 return Randomly.fromOptions(values());
             }
         }
 
-        public LimboColumn(String name, LimboDataType columnType, boolean isInteger, boolean isPrimaryKey,
-                LimboCollateSequence collate) {
+        public LimboColumn(
+            String name,
+            LimboDataType columnType,
+            boolean isInteger,
+            boolean isPrimaryKey,
+            LimboCollateSequence collate
+        ) {
             super(name, null, columnType);
             this.isInteger = isInteger;
             this.isPrimaryKey = isPrimaryKey;
@@ -72,8 +79,13 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
             assert !isInteger || columnType == LimboDataType.INT;
         }
 
-        public LimboColumn(String rowId, LimboDataType columnType, boolean isInteger,
-                LimboCollateSequence collate, boolean generated) {
+        public LimboColumn(
+            String rowId,
+            LimboDataType columnType,
+            boolean isInteger,
+            LimboCollateSequence collate,
+            boolean generated
+        ) {
             this(rowId, columnType, isInteger, generated, collate);
             this.generated = generated;
         }
@@ -83,7 +95,15 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         }
 
         public boolean isOnlyPrimaryKey() {
-            return isPrimaryKey && getTable().getColumns().stream().filter(c -> c.isPrimaryKey()).count() == 1;
+            return (
+                isPrimaryKey &&
+                getTable()
+                    .getColumns()
+                    .stream()
+                    .filter(c -> c.isPrimaryKey())
+                    .count() ==
+                1
+            );
         }
 
         // see https://www.sqlite.org/lang_createtable.html#rowid
@@ -94,7 +114,9 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
          * @return whether the column is an INTEGER PRIMARY KEY
          */
         public boolean isIntegerPrimaryKey() {
-            return isInteger && isOnlyPrimaryKey() && !getTable().hasWithoutRowid();
+            return (
+                isInteger && isOnlyPrimaryKey() && !getTable().hasWithoutRowid()
+            );
         }
 
         public LimboCollateSequence getCollateSequence() {
@@ -108,58 +130,79 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         public static LimboColumn createDummy(String name) {
             return new LimboColumn(name, LimboDataType.INT, false, false, null);
         }
-
     }
 
-    public static LimboConstant getConstant(ResultSet randomRowValues, int columnIndex, LimboDataType valueType)
-            throws SQLException, AssertionError {
+    public static LimboConstant getConstant(
+        ResultSet randomRowValues,
+        int columnIndex,
+        LimboDataType valueType
+    ) throws SQLException, AssertionError {
         Object value;
         LimboConstant constant;
         switch (valueType) {
-        case INT:
-            value = randomRowValues.getLong(columnIndex);
-            constant = LimboConstant.createIntConstant((long) value);
-            break;
-        case REAL:
-            value = randomRowValues.getDouble(columnIndex);
-            if (!Double.isFinite((double) value)) {
-                // TODO: the JDBC driver seems to sometimes return infinity for NULL values
-                throw new IgnoreMeException();
-            }
-            constant = LimboConstant.createRealConstant((double) value);
-            break;
-        case TEXT:
-        case NONE:
-            value = randomRowValues.getString(columnIndex);
-            constant = LimboConstant.createTextConstant((String) value);
-            break;
-        case BINARY:
-            value = randomRowValues.getBytes(columnIndex);
-            constant = LimboConstant.createBinaryConstant((byte[]) value);
-            if (((byte[]) value).length == 0) {
-                // TODO: the JDBC driver seems to sometimes return a zero-length array for NULL values
-                throw new IgnoreMeException();
-            }
-            break;
-        case NULL:
-            return LimboConstant.createNullConstant();
-        default:
-            throw new AssertionError(valueType);
+            case INT:
+                value = randomRowValues.getLong(columnIndex);
+                constant = LimboConstant.createIntConstant((long) value);
+                break;
+            case REAL:
+                value = randomRowValues.getDouble(columnIndex);
+                if (!Double.isFinite((double) value)) {
+                    // TODO: the JDBC driver seems to sometimes return infinity for NULL values
+                    throw new IgnoreMeException();
+                }
+                constant = LimboConstant.createRealConstant((double) value);
+                break;
+            case TEXT:
+            case NONE:
+                value = randomRowValues.getString(columnIndex);
+                constant = LimboConstant.createTextConstant((String) value);
+                break;
+            case BINARY:
+                value = randomRowValues.getBytes(columnIndex);
+                constant = LimboConstant.createBinaryConstant((byte[]) value);
+                if (((byte[]) value).length == 0) {
+                    // TODO: the JDBC driver seems to sometimes return a zero-length array for NULL values
+                    throw new IgnoreMeException();
+                }
+                break;
+            case NULL:
+                return LimboConstant.createNullConstant();
+            default:
+                throw new AssertionError(valueType);
         }
         return constant;
     }
 
-    public static class LimboTables extends AbstractTables<LimboTable, LimboColumn> {
+    public static class LimboTables
+        extends AbstractTables<LimboTable, LimboColumn> {
 
         public LimboTables(List<LimboTable> tables) {
             super(tables);
         }
 
-        public LimboRowValue getRandomRowValue(SQLConnection con) throws SQLException {
-            String randomRow = String.format("SELECT %s, %s FROM %s ORDER BY RANDOM() LIMIT 1", columnNamesAsString(
-                    c -> c.getTable().getName() + "." + c.getName() + " AS " + c.getTable().getName() + c.getName()),
-                    columnNamesAsString(c -> "typeof(" + c.getTable().getName() + "." + c.getName() + ")"),
-                    tableNamesAsString());
+        public LimboRowValue getRandomRowValue(SQLConnection con)
+            throws SQLException {
+            String randomRow = String.format(
+                "SELECT %s, %s FROM %s ORDER BY RANDOM() LIMIT 1",
+                columnNamesAsString(
+                    c ->
+                        c.getTable().getName() +
+                        "." +
+                        c.getName() +
+                        " AS " +
+                        c.getTable().getName() +
+                        c.getName()
+                ),
+                columnNamesAsString(
+                    c ->
+                        "typeof(" +
+                        c.getTable().getName() +
+                        "." +
+                        c.getName() +
+                        ")"
+                ),
+                tableNamesAsString()
+            );
             Map<LimboColumn, LimboConstant> values = new HashMap<>();
             try (Statement s = con.createStatement()) {
                 ResultSet randomRowValues;
@@ -174,26 +217,39 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
                 }
                 for (int i = 0; i < getColumns().size(); i++) {
                     LimboColumn column = getColumns().get(i);
-                    int columnIndex = randomRowValues.findColumn(column.getTable().getName() + column.getName());
+                    int columnIndex = randomRowValues.findColumn(
+                        column.getTable().getName() + column.getName()
+                    );
                     assert columnIndex == i + 1;
-                    String typeString = randomRowValues.getString(columnIndex + getColumns().size());
+                    String typeString = randomRowValues.getString(
+                        columnIndex + getColumns().size()
+                    );
                     LimboDataType valueType = getColumnType(typeString);
-                    LimboConstant constant = getConstant(randomRowValues, columnIndex, valueType);
+                    LimboConstant constant = getConstant(
+                        randomRowValues,
+                        columnIndex,
+                        valueType
+                    );
                     values.put(column, constant);
                 }
                 assert !randomRowValues.next();
                 return new LimboRowValue(this, values);
             }
-
         }
-
     }
 
-    public static class LimboTable extends AbstractRelationalTable<LimboColumn, TableIndex, LimboGlobalState> {
+    public static class LimboTable
+        extends AbstractRelationalTable<
+            LimboColumn,
+            TableIndex,
+            LimboGlobalState
+        > {
+
         // TODO: why does the SQLite implementation have no table indexes?
 
         public enum TableKind {
-            MAIN, TEMP;
+            MAIN,
+            TEMP,
         }
 
         private final TableKind tableType;
@@ -202,8 +258,15 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         private final boolean isVirtual;
         private final boolean isReadOnly;
 
-        public LimboTable(String tableName, List<LimboColumn> columns, TableKind tableType, boolean withoutRowid,
-                boolean isView, boolean isVirtual, boolean isReadOnly) {
+        public LimboTable(
+            String tableName,
+            List<LimboColumn> columns,
+            TableKind tableType,
+            boolean withoutRowid,
+            boolean isView,
+            boolean isVirtual,
+            boolean isReadOnly
+        ) {
             super(tableName, columns, Collections.emptyList(), isView);
             this.tableType = tableType;
             this.withoutRowid = withoutRowid;
@@ -242,18 +305,23 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         public boolean isReadOnly() {
             return isReadOnly;
         }
-
     }
 
-    public static class LimboRowValue extends AbstractRowValue<LimboTables, LimboColumn, LimboConstant> {
+    public static class LimboRowValue
+        extends AbstractRowValue<LimboTables, LimboColumn, LimboConstant> {
 
-        LimboRowValue(LimboTables tables, Map<LimboColumn, LimboConstant> values) {
+        LimboRowValue(
+            LimboTables tables,
+            Map<LimboColumn, LimboConstant> values
+        ) {
             super(tables, values);
         }
-
     }
 
-    public LimboSchema(List<LimboTable> databaseTables, List<String> indexNames) {
+    public LimboSchema(
+        List<LimboTable> databaseTables,
+        List<String> indexNames
+    ) {
         super(databaseTables);
         this.indexNames = indexNames;
     }
@@ -268,28 +336,46 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         return sb.toString();
     }
 
-    public static LimboSchema fromConnection(LimboGlobalState globalState) throws SQLException {
+    public static LimboSchema fromConnection(LimboGlobalState globalState)
+        throws SQLException {
         List<LimboTable> databaseTables = new ArrayList<>();
         List<String> indexNames = new ArrayList<>();
         SQLConnection con = globalState.getConnection();
 
         try (Statement s = con.createStatement()) {
-            try (ResultSet rs = s.executeQuery("SELECT name, type as category, sql FROM sqlite_master UNION "
-                    + "SELECT name, 'temp_table' as category, sql FROM sqlite_temp_master WHERE type='table' UNION SELECT name, 'view' as category, sql FROM sqlite_temp_master WHERE type='view' GROUP BY name;")) {
+            try (
+                ResultSet rs = s.executeQuery(
+                    "SELECT name, type as category, sql FROM sqlite_schema;"
+                )
+            ) {
                 while (rs.next()) {
                     String tableName = rs.getString("name");
                     String tableType = rs.getString("category");
                     boolean isReadOnly;
-                    if (databaseTables.stream().anyMatch(t -> t.getName().contentEquals(tableName))) {
+                    if (
+                        databaseTables
+                            .stream()
+                            .anyMatch(t -> t.getName().contentEquals(tableName))
+                    ) {
                         continue;
                     }
-                    String sqlString = rs.getString("sql") == null ? "" : rs.getString("sql").toLowerCase();
-                    if (tableName.startsWith("sqlite_") || tableType.equals("index") || tableType.equals("trigger")
-                            || tableName.endsWith("_idx") || tableName.endsWith("_docsize")
-                            || tableName.endsWith("_content") || tableName.endsWith("_data")
-                            || tableName.endsWith("_config") || tableName.endsWith("_segdir")
-                            || tableName.endsWith("_stat") || tableName.endsWith("_segments")
-                            || tableName.contains("_")) {
+                    String sqlString = rs.getString("sql") == null
+                        ? ""
+                        : rs.getString("sql").toLowerCase();
+                    if (
+                        tableName.startsWith("sqlite_") ||
+                        tableType.equals("index") ||
+                        tableType.equals("trigger") ||
+                        tableName.endsWith("_idx") ||
+                        tableName.endsWith("_docsize") ||
+                        tableName.endsWith("_content") ||
+                        tableName.endsWith("_data") ||
+                        tableName.endsWith("_config") ||
+                        tableName.endsWith("_segdir") ||
+                        tableName.endsWith("_stat") ||
+                        tableName.endsWith("_segments") ||
+                        tableName.contains("_")
+                    ) {
                         continue; // TODO
                     } else if (sqlString.contains("using dbstat")) {
                         isReadOnly = true;
@@ -302,14 +388,33 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
                     boolean isView = tableType.contentEquals("view");
                     boolean isVirtual = sqlString.contains("virtual");
                     boolean isDbStatsTable = sqlString.contains("using dbstat");
-                    List<LimboColumn> databaseColumns = getTableColumns(con, tableName, sqlString, isView,
-                            isDbStatsTable);
-                    LimboTable t = new LimboTable(tableName, databaseColumns,
-                            tableType.contentEquals("temp_table") ? TableKind.TEMP : TableKind.MAIN, withoutRowid,
-                            isView, isVirtual, isReadOnly);
+                    List<LimboColumn> databaseColumns = getTableColumns(
+                        con,
+                        tableName,
+                        sqlString,
+                        isView,
+                        isDbStatsTable
+                    );
+                    LimboTable t = new LimboTable(
+                        tableName,
+                        databaseColumns,
+                        tableType.contentEquals("temp_table")
+                            ? TableKind.TEMP
+                            : TableKind.MAIN,
+                        withoutRowid,
+                        isView,
+                        isVirtual,
+                        isReadOnly
+                    );
                     if (isRowIdTable(withoutRowid, isView, isVirtual)) {
                         String rowId = Randomly.fromList(ROWID_STRINGS);
-                        LimboColumn rowid = new LimboColumn(rowId, LimboDataType.INT, true, null, true);
+                        LimboColumn rowid = new LimboColumn(
+                            rowId,
+                            LimboDataType.INT,
+                            true,
+                            null,
+                            true
+                        );
                         t.addRowid(rowid);
                         rowid.setTable(t);
                     }
@@ -321,8 +426,11 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
             } catch (SQLException e) {
                 // ignore
             }
-            try (ResultSet rs = s.executeQuery(
-                    "SELECT name FROM SQLite_master WHERE type = 'index' UNION SELECT name FROM sqlite_temp_master WHERE type='index'")) {
+            try (
+                ResultSet rs = s.executeQuery(
+                    "SELECT name FROM sqlite_schema WHERE type = 'index';"
+                )
+            ) {
                 while (rs.next()) {
                     String name = rs.getString(1);
                     if (name.contains("_autoindex")) {
@@ -341,25 +449,43 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
     }
 
     // https://www.sqlite.org/rowidtable.html
-    private static boolean isRowIdTable(boolean withoutRowid, boolean isView, boolean isVirtual) {
+    private static boolean isRowIdTable(
+        boolean withoutRowid,
+        boolean isView,
+        boolean isVirtual
+    ) {
         return !isView && !isVirtual && !withoutRowid;
     }
 
-    private static List<LimboColumn> getTableColumns(SQLConnection con, String tableName, String sql, boolean isView,
-            boolean isDbStatsTable) throws SQLException {
+    private static List<LimboColumn> getTableColumns(
+        SQLConnection con,
+        String tableName,
+        String sql,
+        boolean isView,
+        boolean isDbStatsTable
+    ) throws SQLException {
         List<LimboColumn> databaseColumns = new ArrayList<>();
         try (Statement s2 = con.createStatement()) {
-            String tableInfoStr = String.format("PRAGMA table_xinfo(%s)", tableName);
+            String tableInfoStr = String.format(
+                "PRAGMA table_xinfo(%s)",
+                tableName
+            );
             try (ResultSet columnRs = s2.executeQuery(tableInfoStr)) {
                 String[] columnCreates = sql.split(",");
                 int columnCreateIndex = 0;
                 while (columnRs.next()) {
                     String columnName = columnRs.getString("name");
-                    if (columnName.contentEquals("docid") || columnName.contentEquals("rank")
-                            || columnName.contentEquals(tableName) || columnName.contentEquals("__langid")) {
+                    if (
+                        columnName.contentEquals("docid") ||
+                        columnName.contentEquals("rank") ||
+                        columnName.contentEquals(tableName) ||
+                        columnName.contentEquals("__langid")
+                    ) {
                         continue; // internal column names of FTS tables
                     }
-                    if (isDbStatsTable && columnName.contentEquals("aggregate")) {
+                    if (
+                        isDbStatsTable && columnName.contentEquals("aggregate")
+                    ) {
                         // see https://www.sqlite.org/src/tktview?name=a3713a5fca
                         continue;
                     }
@@ -373,13 +499,18 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
                     } else {
                         collate = LimboCollateSequence.BINARY;
                     }
-                    databaseColumns.add(new LimboColumn(columnName, columnType,
-                            columnTypeString.contentEquals("INTEGER"), isPrimaryKey, collate));
+                    databaseColumns.add(
+                        new LimboColumn(
+                            columnName,
+                            columnType,
+                            columnTypeString.contentEquals("INTEGER"),
+                            isPrimaryKey,
+                            collate
+                        )
+                    );
                 }
             }
-        } catch (SQLException e) {
-
-        }
+        } catch (SQLException e) {}
         if (databaseColumns.isEmpty()) {
             // only generated columns
             throw new IgnoreMeException();
@@ -407,34 +538,36 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
     }
 
     public static LimboDataType getColumnType(String columnTypeString) {
-        String trimmedTypeString = columnTypeString.toUpperCase().replace(" GENERATED ALWAYS", "");
+        String trimmedTypeString = columnTypeString
+            .toUpperCase()
+            .replace(" GENERATED ALWAYS", "");
         LimboDataType columnType;
         switch (trimmedTypeString) {
-        case "TEXT":
-            columnType = LimboDataType.TEXT;
-            break;
-        case "INTEGER":
-            columnType = LimboDataType.INT;
-            break;
-        case "INT":
-        case "BOOLEAN":
-            columnType = LimboDataType.INT;
-            break;
-        case "":
-            columnType = LimboDataType.NONE;
-            break;
-        case "BLOB":
-            columnType = LimboDataType.BINARY;
-            break;
-        case "REAL":
-        case "NUM":
-            columnType = LimboDataType.REAL;
-            break;
-        case "NULL":
-            columnType = LimboDataType.NULL;
-            break;
-        default:
-            throw new AssertionError(trimmedTypeString);
+            case "TEXT":
+                columnType = LimboDataType.TEXT;
+                break;
+            case "INTEGER":
+                columnType = LimboDataType.INT;
+                break;
+            case "INT":
+            case "BOOLEAN":
+                columnType = LimboDataType.INT;
+                break;
+            case "":
+                columnType = LimboDataType.NONE;
+                break;
+            case "BLOB":
+                columnType = LimboDataType.BINARY;
+                break;
+            case "REAL":
+            case "NUM":
+                columnType = LimboDataType.REAL;
+                break;
+            case "NULL":
+                columnType = LimboDataType.NULL;
+                break;
+            default:
+                throw new AssertionError(trimmedTypeString);
         }
         return columnType;
     }
@@ -455,11 +588,18 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
     }
 
     public LimboTable getRandomTableNoViewNoVirtualTable() {
-        return Randomly.fromList(getDatabaseTablesWithoutViewsWithoutVirtualTables());
+        return Randomly.fromList(
+            getDatabaseTablesWithoutViewsWithoutVirtualTables()
+        );
     }
 
-    public List<LimboTable> getDatabaseTablesWithoutViewsWithoutVirtualTables() {
-        return getDatabaseTables().stream().filter(t -> !t.isView() && !t.isVirtual).collect(Collectors.toList());
+    public List<
+        LimboTable
+    > getDatabaseTablesWithoutViewsWithoutVirtualTables() {
+        return getDatabaseTables()
+            .stream()
+            .filter(t -> !t.isView() && !t.isVirtual)
+            .collect(Collectors.toList());
     }
 
     public String getFreeVirtualTableName() {
@@ -469,11 +609,14 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         }
         do {
             String tableName = String.format("vt%d", i++);
-            if (getDatabaseTables().stream().noneMatch(t -> t.getName().equalsIgnoreCase(tableName))) {
+            if (
+                getDatabaseTables()
+                    .stream()
+                    .noneMatch(t -> t.getName().equalsIgnoreCase(tableName))
+            ) {
                 return tableName;
             }
         } while (true);
-
     }
 
     public String getFreeRtreeTableName() {
@@ -483,11 +626,13 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         }
         do {
             String tableName = String.format("rt%d", i++);
-            if (getDatabaseTables().stream().noneMatch(t -> t.getName().equalsIgnoreCase(tableName))) {
+            if (
+                getDatabaseTables()
+                    .stream()
+                    .noneMatch(t -> t.getName().equalsIgnoreCase(tableName))
+            ) {
                 return tableName;
             }
         } while (true);
-
     }
-
 }
