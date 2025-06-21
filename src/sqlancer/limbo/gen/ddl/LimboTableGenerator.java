@@ -1,10 +1,7 @@
 package sqlancer.limbo.gen.ddl;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
 import sqlancer.common.DBMSCommon;
@@ -15,10 +12,7 @@ import sqlancer.limbo.LimboGlobalState;
 import sqlancer.limbo.LimboOracleFactory;
 import sqlancer.limbo.gen.LimboColumnBuilder;
 import sqlancer.limbo.gen.LimboCommon;
-import sqlancer.limbo.schema.LimboSchema;
 import sqlancer.limbo.schema.LimboSchema.LimboColumn;
-import sqlancer.limbo.schema.LimboSchema.LimboTable;
-import sqlancer.limbo.schema.LimboSchema.LimboTable.TableKind;
 
 /**
  * See https://www.sqlite.org/lang_createtable.html
@@ -37,49 +31,58 @@ public class LimboTableGenerator {
     private boolean containsAutoIncrement;
     private final List<String> columnNames = new ArrayList<>();
     private final List<LimboColumn> columns = new ArrayList<>();
-    private final LimboSchema existingSchema;
     private final LimboGlobalState globalState;
-    private boolean tempTable;
 
     public LimboTableGenerator(String tableName, LimboGlobalState globalState) {
         this.tableName = tableName;
         this.globalState = globalState;
-        this.existingSchema = globalState.getSchema();
     }
 
-    public static SQLQueryAdapter createRandomTableStatement(LimboGlobalState globalState) {
-        if (globalState.getSchema().getTables().getTables()
-                .size() > globalState.getDbmsSpecificOptions().maxNumTables) {
+    public static SQLQueryAdapter createRandomTableStatement(
+        LimboGlobalState globalState
+    ) {
+        if (
+            globalState.getSchema().getTables().getTables().size() >
+            globalState.getDbmsSpecificOptions().maxNumTables
+        ) {
             throw new IgnoreMeException();
         }
-        return createTableStatement(globalState.getSchema().getFreeTableName(), globalState);
+        return createTableStatement(
+            globalState.getSchema().getFreeTableName(),
+            globalState
+        );
     }
 
-    public static SQLQueryAdapter createTableStatement(String tableName, LimboGlobalState globalState) {
-        LimboTableGenerator sqLite3TableGenerator = new LimboTableGenerator(tableName, globalState);
+    public static SQLQueryAdapter createTableStatement(
+        String tableName,
+        LimboGlobalState globalState
+    ) {
+        LimboTableGenerator sqLite3TableGenerator = new LimboTableGenerator(
+            tableName,
+            globalState
+        );
         sqLite3TableGenerator.start();
         ExpectedErrors errors = new ExpectedErrors();
         LimboErrors.addTableManipulationErrors(errors);
-        errors.add("second argument to likelihood() must be a constant between 0.0 and 1.0");
-        errors.add("non-deterministic functions prohibited in generated columns");
+        errors.add(
+            "second argument to likelihood() must be a constant between 0.0 and 1.0"
+        );
+        errors.add(
+            "non-deterministic functions prohibited in generated columns"
+        );
         errors.add("subqueries prohibited in generated columns");
         errors.add("parser stack overflow");
         errors.add("malformed JSON");
         errors.add("JSON cannot hold BLOB values");
-        return new SQLQueryAdapter(sqLite3TableGenerator.sb.toString(), errors, true);
+        return new SQLQueryAdapter(
+            sqLite3TableGenerator.sb.toString(),
+            errors,
+            true
+        );
     }
 
     public void start() {
-        sb.append("CREATE ");
-        if (globalState.getDbmsSpecificOptions().testTempTables && Randomly.getBoolean()) {
-            tempTable = true;
-            if (Randomly.getBoolean()) {
-                sb.append("TEMP ");
-            } else {
-                sb.append("TEMPORARY ");
-            }
-        }
-        sb.append("TABLE ");
+        sb.append("CREATE TABLE ");
         if (Randomly.getBoolean()) {
             sb.append("IF NOT EXISTS ");
         }
@@ -88,7 +91,9 @@ public class LimboTableGenerator {
         boolean allowPrimaryKeyInColumn = Randomly.getBoolean();
         int nrColumns = 1 + Randomly.smallNumber();
         for (int i = 0; i < nrColumns; i++) {
-            columns.add(LimboColumn.createDummy(DBMSCommon.createColumnName(i)));
+            columns.add(
+                LimboColumn.createDummy(DBMSCommon.createColumnName(i))
+            );
         }
         for (int i = 0; i < nrColumns; i++) {
             if (i != 0) {
@@ -96,8 +101,12 @@ public class LimboTableGenerator {
             }
             String columnName = DBMSCommon.createColumnName(columnId);
             LimboColumnBuilder columnBuilder = new LimboColumnBuilder()
-                    .allowPrimaryKey(allowPrimaryKeyInColumn && !containsPrimaryKey);
-            sb.append(columnBuilder.createColumn(columnName, globalState, columns));
+                .allowPrimaryKey(
+                    allowPrimaryKeyInColumn && !containsPrimaryKey
+                );
+            sb.append(
+                columnBuilder.createColumn(columnName, globalState, columns)
+            );
             sb.append(" ");
             if (columnBuilder.isContainsAutoIncrement()) {
                 this.containsAutoIncrement = true;
@@ -119,27 +128,22 @@ public class LimboTableGenerator {
             }
         }
 
-        if (globalState.getDbmsSpecificOptions().testForeignKeys && Randomly.getBooleanWithSmallProbability()) {
-            addForeignKey();
-        }
-
-        if (globalState.getDbmsSpecificOptions().testCheckConstraints && globalState
-                .getDbmsSpecificOptions().oracles != LimboOracleFactory.PQS /*
-                                                                               * we are currently lacking a parser to
-                                                                               * read column definitions, and would
-                                                                               * interpret a COLLATE in the check
-                                                                               * constraint as belonging to the column
-                                                                               */
-                && Randomly.getBooleanWithRatherLowProbability()) {
+        if (
+            globalState.getDbmsSpecificOptions().testCheckConstraints &&
+            globalState.getDbmsSpecificOptions().oracles !=
+            LimboOracleFactory.PQS &&
+            /*
+             * we are currently lacking a parser to
+             * read column definitions, and would
+             * interpret a COLLATE in the check
+             * constraint as belonging to the column
+             */
+            Randomly.getBooleanWithRatherLowProbability()
+        ) {
             sb.append(LimboCommon.getCheckConstraint(globalState, columns));
         }
 
         sb.append(")");
-        if (globalState.getDbmsSpecificOptions().testWithoutRowids && containsPrimaryKey && !containsAutoIncrement
-                && Randomly.getBoolean()) {
-            // see https://sqlite.org/withoutrowid.html
-            sb.append(" WITHOUT ROWID");
-        }
     }
 
     private void addColumnConstraints(String s) {
@@ -155,72 +159,4 @@ public class LimboTableGenerator {
         }
         sb.append(")");
     }
-
-    /**
-     * @see https://www.sqlite.org/foreignkeys.html
-     */
-    private void addForeignKey() {
-        assert globalState.getDbmsSpecificOptions().testForeignKeys;
-        List<String> foreignKeyColumns;
-        if (Randomly.getBoolean()) {
-            foreignKeyColumns = Arrays.asList(Randomly.fromList(columnNames));
-        } else {
-            foreignKeyColumns = new ArrayList<>();
-            do {
-                foreignKeyColumns.add(Randomly.fromList(columnNames));
-            } while (Randomly.getBoolean());
-        }
-        sb.append(", FOREIGN KEY(");
-        sb.append(foreignKeyColumns.stream().collect(Collectors.joining(", ")));
-        sb.append(")");
-        sb.append(" REFERENCES ");
-        String referencedTableName;
-        List<String> columns = new ArrayList<>();
-        if (existingSchema.getDatabaseTables().isEmpty() || Randomly.getBooleanWithSmallProbability()) {
-            // the foreign key references our own table
-            referencedTableName = tableName;
-            for (int i = 0; i < foreignKeyColumns.size(); i++) {
-                columns.add(Randomly.fromList(columnNames));
-            }
-        } else {
-            final TableKind type = tempTable ? TableKind.TEMP : TableKind.MAIN;
-            List<LimboTable> applicableTables = existingSchema.getTables().getTables().stream()
-                    .filter(t -> t.getTableType() == type).collect(Collectors.toList());
-            if (applicableTables.isEmpty()) {
-                referencedTableName = tableName;
-                for (int i = 0; i < foreignKeyColumns.size(); i++) {
-                    columns.add(Randomly.fromList(columnNames));
-                }
-            } else {
-                LimboTable randomTable = Randomly.fromList(applicableTables);
-                referencedTableName = randomTable.getName();
-                for (int i = 0; i < foreignKeyColumns.size(); i++) {
-                    columns.add(randomTable.getRandomColumn().getName());
-                }
-            }
-        }
-        sb.append(referencedTableName);
-        sb.append("(");
-        sb.append(columns.stream().collect(Collectors.joining(", ")));
-        sb.append(")");
-        addActionClause(" ON DELETE ");
-        addActionClause(" ON UPDATE ");
-        if (Randomly.getBoolean()) {
-            // add a deferrable clause
-            sb.append(" ");
-            String deferrable = Randomly.fromOptions("DEFERRABLE INITIALLY DEFERRED",
-                    "NOT DEFERRABLE INITIALLY DEFERRED", "NOT DEFERRABLE INITIALLY IMMEDIATE", "NOT DEFERRABLE",
-                    "DEFERRABLE INITIALLY IMMEDIATE", "DEFERRABLE");
-            sb.append(deferrable);
-        }
-    }
-
-    private void addActionClause(String string) {
-        if (Randomly.getBoolean()) {
-            // add an ON DELETE or ON ACTION clause
-            sb.append(string);
-            sb.append(Randomly.fromOptions("NO ACTION", "RESTRICT", "SET NULL", "SET DEFAULT", "CASCADE"));
-        }
-    }
-
 }
