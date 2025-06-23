@@ -17,14 +17,18 @@ public class LimboFuzzer implements TestOracle<LimboGlobalState> {
 
     @Override
     public void check() throws Exception {
-        String s = LimboVisitor
-                .asString(LimboRandomQuerySynthesizer.generate(globalState, Randomly.smallNumber() + 1)) + ";";
+        System.out.println("Checking Limbo Fuzzer");
+        String s =
+            LimboVisitor.asString(
+                LimboRandomQuerySynthesizer.generate(
+                    globalState,
+                    Randomly.smallNumber() + 1
+                )
+            ) +
+            ";";
         try {
             globalState.executeStatement(new SQLQueryAdapter(s));
             globalState.getManager().incrementSelectQueryCount();
-        } catch (Error e) {
-
-        }
+        } catch (Error e) {}
     }
-
 }

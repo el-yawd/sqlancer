@@ -6,15 +6,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import sqlancer.StateToReproduce.OracleRunReproductionState;
 import sqlancer.common.DBMSCommon;
 import sqlancer.common.oracle.CompositeTestOracle;
 import sqlancer.common.oracle.TestOracle;
 import sqlancer.common.schema.AbstractSchema;
 
-public abstract class ProviderAdapter<G extends GlobalState<O, ? extends AbstractSchema<G, ?>, C>, O extends DBMSSpecificOptions<? extends OracleFactory<G>>, C extends SQLancerDBConnection>
-        implements DatabaseProvider<G, O, C> {
+public abstract class ProviderAdapter<
+    G extends GlobalState<O, ? extends AbstractSchema<G, ?>, C>,
+    O extends DBMSSpecificOptions<? extends OracleFactory<G>>,
+    C extends SQLancerDBConnection
+>
+    implements DatabaseProvider<G, O, C> {
 
     private final Class<G> globalClass;
     private final Class<O> optionClass;
@@ -47,21 +50,36 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     }
 
     @Override
-    public Reproducer<G> generateAndTestDatabase(G globalState) throws Exception {
+    public Reproducer<G> generateAndTestDatabase(G globalState)
+        throws Exception {
+        System.out.println("Checking Limbo Fuzzer");
         try {
             generateDatabase(globalState);
+
+            System.out.println("Checking Limbo Fuzzer 1");
             checkViewsAreValid(globalState);
+
+            System.out.println("Checking Limbo Fuzzer 2");
             globalState.getManager().incrementCreateDatabase();
+            System.out.println("Checking Limbo Fuzzer 3");
 
             TestOracle<G> oracle = getTestOracle(globalState);
+            System.out.println(
+                "N queries" + globalState.getOptions().getNrQueries()
+            );
             for (int i = 0; i < globalState.getOptions().getNrQueries(); i++) {
-                try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
+                try (
+                    OracleRunReproductionState localState = globalState
+                        .getState()
+                        .createLocalState()
+                ) {
                     assert localState != null;
                     try {
                         oracle.check();
                         globalState.getManager().incrementSelectQueryCount();
-                    } catch (IgnoreMeException ignored) {
-                    } catch (AssertionError e) {
+                    } catch (IgnoreMeException ignored) {} catch (
+                        AssertionError e
+                    ) {
                         Reproducer<G> reproducer = oracle.getLastReproducer();
                         if (reproducer != null) {
                             return reproducer;
@@ -72,21 +90,31 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                 }
             }
         } finally {
+            System.out.println("something bad happened");
             globalState.getConnection().close();
         }
         return null;
     }
 
-    protected abstract void checkViewsAreValid(G globalState) throws SQLException;
+    protected abstract void checkViewsAreValid(G globalState)
+        throws SQLException;
 
     protected TestOracle<G> getTestOracle(G globalState) throws Exception {
-        List<? extends OracleFactory<G>> testOracleFactory = globalState.getDbmsSpecificOptions()
-                .getTestOracleFactory();
-        boolean testOracleRequiresMoreThanZeroRows = testOracleFactory.stream()
-                .anyMatch(OracleFactory::requiresAllTablesToContainRows);
-        boolean userRequiresMoreThanZeroRows = globalState.getOptions().testOnlyWithMoreThanZeroRows();
-        boolean checkZeroRows = testOracleRequiresMoreThanZeroRows || userRequiresMoreThanZeroRows;
-        if (checkZeroRows && globalState.getSchema().containsTableWithZeroRows(globalState)) {
+        List<? extends OracleFactory<G>> testOracleFactory = globalState
+            .getDbmsSpecificOptions()
+            .getTestOracleFactory();
+        boolean testOracleRequiresMoreThanZeroRows = testOracleFactory
+            .stream()
+            .anyMatch(OracleFactory::requiresAllTablesToContainRows);
+        boolean userRequiresMoreThanZeroRows = globalState
+            .getOptions()
+            .testOnlyWithMoreThanZeroRows();
+        boolean checkZeroRows =
+            testOracleRequiresMoreThanZeroRows || userRequiresMoreThanZeroRows;
+        if (
+            checkZeroRows &&
+            globalState.getSchema().containsTableWithZeroRows(globalState)
+        ) {
             if (globalState.getOptions().enableQPG()) {
                 addRowsToAllTables(globalState);
             } else {
@@ -96,13 +124,19 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
         if (testOracleFactory.size() == 1) {
             return testOracleFactory.get(0).create(globalState);
         } else {
-            return new CompositeTestOracle<>(testOracleFactory.stream().map(o -> {
-                try {
-                    return o.create(globalState);
-                } catch (Exception e1) {
-                    throw new AssertionError(e1);
-                }
-            }).collect(Collectors.toList()), globalState);
+            return new CompositeTestOracle<>(
+                testOracleFactory
+                    .stream()
+                    .map(o -> {
+                        try {
+                            return o.create(globalState);
+                        } catch (Exception e1) {
+                            throw new AssertionError(e1);
+                        }
+                    })
+                    .collect(Collectors.toList()),
+                globalState
+            );
         }
     }
 
@@ -110,7 +144,8 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
 
     // QPG: entry function
     @Override
-    public void generateAndTestDatabaseWithQueryPlanGuidance(G globalState) throws Exception {
+    public void generateAndTestDatabaseWithQueryPlanGuidance(G globalState)
+        throws Exception {
         if (weightedAverageReward == null) {
             weightedAverageReward = initializeWeightedAverageReward(); // Same length as the list of mutators
         }
@@ -120,11 +155,19 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
             globalState.getManager().incrementCreateDatabase();
 
             Long executedQueryCount = 0L;
-            while (executedQueryCount < globalState.getOptions().getNrQueries()) {
+            while (
+                executedQueryCount < globalState.getOptions().getNrQueries()
+            ) {
                 int numOfNoNewQueryPlans = 0;
                 TestOracle<G> oracle = getTestOracle(globalState);
-                while (executedQueryCount < globalState.getOptions().getNrQueries()) {
-                    try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
+                while (
+                    executedQueryCount < globalState.getOptions().getNrQueries()
+                ) {
+                    try (
+                        OracleRunReproductionState localState = globalState
+                            .getState()
+                            .createLocalState()
+                    ) {
                         assert localState != null;
                         try {
                             oracle.check();
@@ -135,14 +178,17 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                             } else {
                                 numOfNoNewQueryPlans++;
                             }
-                            globalState.getManager().incrementSelectQueryCount();
-                        } catch (IgnoreMeException e) {
-
-                        }
+                            globalState
+                                .getManager()
+                                .incrementSelectQueryCount();
+                        } catch (IgnoreMeException e) {}
                         localState.executedWithoutError();
                     }
                     // exit loop to mutate tables if no new query plans have been found after a while
-                    if (numOfNoNewQueryPlans > globalState.getOptions().getQPGMaxMutationInterval()) {
+                    if (
+                        numOfNoNewQueryPlans >
+                        globalState.getOptions().getQPGMaxMutationInterval()
+                    ) {
                         mutateTables(globalState);
                         break;
                     }
@@ -157,17 +203,25 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     private synchronized boolean mutateTables(G globalState) throws Exception {
         // Update rewards based on a set of newly generated queries in last iteration
         if (currentMutationOperator != -1) {
-            weightedAverageReward[currentMutationOperator] += ((double) currentSelectRewards
-                    / (double) currentSelectCounts) * globalState.getOptions().getQPGk();
+            weightedAverageReward[currentMutationOperator] +=
+                ((double) currentSelectRewards / (double) currentSelectCounts) *
+                globalState.getOptions().getQPGk();
         }
         currentMutationOperator = -1;
 
         // Choose mutator based on the rewards
         int selectedActionIndex = 0;
-        if (Randomly.getPercentage() < globalState.getOptions().getQPGProbability()) {
-            selectedActionIndex = globalState.getRandomly().getInteger(0, weightedAverageReward.length);
+        if (
+            Randomly.getPercentage() <
+            globalState.getOptions().getQPGProbability()
+        ) {
+            selectedActionIndex = globalState
+                .getRandomly()
+                .getInteger(0, weightedAverageReward.length);
         } else {
-            selectedActionIndex = DBMSCommon.getMaxIndexInDoubleArray(weightedAverageReward);
+            selectedActionIndex = DBMSCommon.getMaxIndexInDoubleArray(
+                weightedAverageReward
+            );
         }
         int reward = 0;
 
@@ -175,10 +229,13 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
             executeMutator(selectedActionIndex, globalState);
             checkViewsAreValid(globalState); // Remove the invalid views
             reward = checkQueryPlan(globalState);
-        } catch (IgnoreMeException | AssertionError e) {
-        } finally {
+        } catch (IgnoreMeException | AssertionError e) {} finally {
             // Update rewards based on existing queries associated with the query plan pool
-            updateReward(selectedActionIndex, (double) reward / (double) queryPlanPool.size(), globalState);
+            updateReward(
+                selectedActionIndex,
+                (double) reward / (double) queryPlanPool.size(),
+                globalState
+            );
             currentMutationOperator = selectedActionIndex;
         }
 
@@ -189,7 +246,8 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     }
 
     // QPG: add a query plan to the query plan pool and return true if the query plan is new
-    private boolean addQueryPlan(String selectStr, G globalState) throws Exception {
+    private boolean addQueryPlan(String selectStr, G globalState)
+        throws Exception {
         String queryPlan = getQueryPlan(selectStr, globalState);
 
         if (globalState.getOptions().logQueryPlan()) {
@@ -210,7 +268,12 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     private int checkQueryPlan(G globalState) throws Exception {
         int newQueryPlanFound = 0;
         HashMap<String, String> modifiedQueryPlan = new HashMap<>();
-        for (Iterator<Map.Entry<String, String>> it = queryPlanPool.entrySet().iterator(); it.hasNext();) {
+        for (
+            Iterator<Map.Entry<String, String>> it = queryPlanPool
+                .entrySet()
+                .iterator();
+            it.hasNext();
+        ) {
             Map.Entry<String, String> item = it.next();
             String queryPlan = item.getKey();
             String selectStr = item.getValue();
@@ -231,8 +294,9 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
 
     // QPG: update the reward of current action
     private void updateReward(int actionIndex, double reward, G globalState) {
-        weightedAverageReward[actionIndex] += (reward - weightedAverageReward[actionIndex])
-                * globalState.getOptions().getQPGk();
+        weightedAverageReward[actionIndex] +=
+            (reward - weightedAverageReward[actionIndex]) *
+            globalState.getOptions().getQPGk();
     }
 
     // QPG: initialize the weighted average reward of all mutation operators (required implementation in specific DBMS)
@@ -241,7 +305,8 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     }
 
     // QPG: obtain the query plan of a query (required implementation in specific DBMS)
-    protected String getQueryPlan(String selectStr, G globalState) throws Exception {
+    protected String getQueryPlan(String selectStr, G globalState)
+        throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -254,5 +319,4 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     protected boolean addRowsToAllTables(G globalState) throws Exception {
         throw new UnsupportedOperationException();
     }
-
 }

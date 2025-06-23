@@ -108,6 +108,7 @@ public class LimboProvider
     @Override
     public void generateDatabase(LimboGlobalState globalState)
         throws Exception {
+        System.out.println("Generating database...");
         Randomly r = new Randomly(LimboSpecialStringGenerator::generate);
         globalState.setRandomly(r);
         if (globalState.getDbmsSpecificOptions().generateDatabase) {
@@ -121,12 +122,19 @@ public class LimboProvider
             int i = 0;
 
             do {
+                System.out.println(
+                    "Current Size: " +
+                    globalState.getSchema().getDatabaseTables().size() +
+                    ", Tables to Create: " +
+                    nrTablesToCreate
+                );
                 SQLQueryAdapter tableQuery = getTableQuery(globalState, i++);
                 globalState.executeStatement(tableQuery);
             } while (
                 globalState.getSchema().getDatabaseTables().size() <
                 nrTablesToCreate
             );
+            System.out.println("Debug 3");
             assert globalState.getSchema().getTables().getTables().size() ==
             nrTablesToCreate;
             checkTablesForGeneratedColumnLoops(globalState);
@@ -156,18 +164,24 @@ public class LimboProvider
                         }
                     }
                 );
+
+            System.out.println("Debug 4");
             se.executeStatements();
 
+            System.out.println("Debug 5");
             SQLQueryAdapter query = LimboTransactionGenerator.generateCommit(
                 globalState
             );
             globalState.executeStatement(query);
 
+            System.out.println("Debug 6");
             // also do an abort for DEFERRABLE INITIALLY DEFERRED
             query = LimboTransactionGenerator.generateRollbackTransaction(
                 globalState
             );
             globalState.executeStatement(query);
+
+            System.out.println("Debug 7");
         }
     }
 

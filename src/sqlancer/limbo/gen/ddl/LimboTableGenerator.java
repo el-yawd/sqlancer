@@ -82,9 +82,9 @@ public class LimboTableGenerator {
     }
 
     public void start() {
-        sb.append("CREATE TABLE ");
+        sb.append("CREATE TABLE IF NOT EXISTS ");
         if (Randomly.getBoolean()) {
-            sb.append("IF NOT EXISTS ");
+            sb.append(" ");
         }
         sb.append(tableName);
         sb.append(" (");
@@ -117,15 +117,6 @@ public class LimboTableGenerator {
 
             columnNames.add(columnName);
             columnId++;
-        }
-        if (!containsPrimaryKey && Randomly.getBooleanWithSmallProbability()) {
-            addColumnConstraints("PRIMARY KEY");
-            containsPrimaryKey = true;
-        }
-        if (Randomly.getBooleanWithSmallProbability()) {
-            for (int i = 0; i < Randomly.smallNumber(); i++) {
-                addColumnConstraints("UNIQUE");
-            }
         }
 
         if (
