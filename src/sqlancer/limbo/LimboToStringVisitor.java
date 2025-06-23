@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import sqlancer.Randomly;
 import sqlancer.common.visitor.ToStringVisitor;
 import sqlancer.limbo.ast.LimboAggregate;
@@ -22,7 +21,6 @@ import sqlancer.limbo.ast.LimboExpression.CollateOperation;
 import sqlancer.limbo.ast.LimboExpression.Function;
 import sqlancer.limbo.ast.LimboExpression.InOperation;
 import sqlancer.limbo.ast.LimboExpression.Join;
-import sqlancer.limbo.ast.LimboExpression.MatchOperation;
 import sqlancer.limbo.ast.LimboExpression.LimboAlias;
 import sqlancer.limbo.ast.LimboExpression.LimboColumnName;
 import sqlancer.limbo.ast.LimboExpression.LimboDistinct;
@@ -36,6 +34,7 @@ import sqlancer.limbo.ast.LimboExpression.LimboText;
 import sqlancer.limbo.ast.LimboExpression.LimboTypeof;
 import sqlancer.limbo.ast.LimboExpression.LimboValues;
 import sqlancer.limbo.ast.LimboExpression.LimboWithClause;
+import sqlancer.limbo.ast.LimboExpression.MatchOperation;
 import sqlancer.limbo.ast.LimboExpression.Subquery;
 import sqlancer.limbo.ast.LimboExpression.TypeLiteral;
 import sqlancer.limbo.ast.LimboFunction;
@@ -48,7 +47,9 @@ import sqlancer.limbo.ast.LimboWindowFunctionExpression.LimboWindowFunctionFrame
 import sqlancer.limbo.ast.LimboWindowFunctionExpression.LimboWindowFunctionFrameSpecTerm;
 import sqlancer.limbo.schema.LimboDataType;
 
-public class LimboToStringVisitor extends ToStringVisitor<LimboExpression> implements LimboVisitor {
+public class LimboToStringVisitor
+    extends ToStringVisitor<LimboExpression>
+    implements LimboVisitor {
 
     public boolean fullyQualifiedNames = true;
 
@@ -117,14 +118,14 @@ public class LimboToStringVisitor extends ToStringVisitor<LimboExpression> imple
         }
         sb.append("SELECT ");
         switch (s.getFromOptions()) {
-        case DISTINCT:
-            sb.append("DISTINCT ");
-            break;
-        case ALL:
-            sb.append(Randomly.fromOptions("ALL ", ""));
-            break;
-        default:
-            throw new AssertionError(s.getFromOptions());
+            case DISTINCT:
+                sb.append("DISTINCT ");
+                break;
+            case ALL:
+                sb.append(Randomly.fromOptions("ALL ", ""));
+                break;
+            default:
+                throw new AssertionError(s.getFromOptions());
         }
         if (s.getFetchColumns() == null) {
             sb.append("*");
@@ -188,51 +189,51 @@ public class LimboToStringVisitor extends ToStringVisitor<LimboExpression> imple
             sb.append("NULL");
         } else {
             switch (c.getDataType()) {
-            case INT:
-                // if ((c.asInt() == 0 || c.asInt() == 1) && Randomly.getBoolean()) {
-                // sb.append(c.asInt() == 1 ? "TRUE" : "FALSE");
-                // } else {
-                // - 0X8000000000000000 results in an error message otherwise
-                if (!c.isHex() || c.asInt() == Long.MIN_VALUE) {
-                    sb.append(c.asInt());
-                } else {
-                    long intVal = c.asInt();
-                    asHexString(intVal);
-                }
-                // }
-                break;
-            case REAL:
-                double asDouble = c.asDouble();
-                if (Double.POSITIVE_INFINITY == asDouble) {
-                    sb.append("1e500");
-                } else if (Double.NEGATIVE_INFINITY == asDouble) {
-                    sb.append("-1e500");
-                } else if (Double.isNaN(asDouble)) {
-                    // throw new IgnoreMeException();
-                    sb.append("1e500 / 1e500");
-                } else {
-                    sb.append(asDouble);
-                }
-                break;
-            case TEXT:
-                sb.append("'");
-                sb.append(c.asString().replace("'", "''"));
-                sb.append("'");
-                break;
-            case BINARY:
-                sb.append('x');
-                sb.append("'");
-                byte[] arr;
-                if (c.getValue() instanceof byte[]) {
-                    arr = c.asBinary();
-                } else {
-                    arr = c.asString().getBytes(LimboCast.DEFAULT_ENCODING);
-                }
-                sb.append(LimboVisitor.byteArrayToHex(arr));
-                sb.append("'");
-                break;
-            default:
-                throw new AssertionError(c.getDataType());
+                case INT:
+                    // if ((c.asInt() == 0 || c.asInt() == 1) && Randomly.getBoolean()) {
+                    // sb.append(c.asInt() == 1 ? "TRUE" : "FALSE");
+                    // } else {
+                    // - 0X8000000000000000 results in an error message otherwise
+                    if (!c.isHex() || c.asInt() == Long.MIN_VALUE) {
+                        sb.append(c.asInt());
+                    } else {
+                        long intVal = c.asInt();
+                        asHexString(intVal);
+                    }
+                    // }
+                    break;
+                case REAL:
+                    double asDouble = c.asDouble();
+                    if (Double.POSITIVE_INFINITY == asDouble) {
+                        sb.append("1e500");
+                    } else if (Double.NEGATIVE_INFINITY == asDouble) {
+                        sb.append("-1e500");
+                    } else if (Double.isNaN(asDouble)) {
+                        // throw new IgnoreMeException();
+                        sb.append("1e500 / 1e500");
+                    } else {
+                        sb.append(asDouble);
+                    }
+                    break;
+                case TEXT:
+                    sb.append("'");
+                    sb.append(c.asString().replace("'", "''"));
+                    sb.append("'");
+                    break;
+                case BINARY:
+                    sb.append('x');
+                    sb.append("'");
+                    byte[] arr;
+                    if (c.getValue() instanceof byte[]) {
+                        arr = c.asBinary();
+                    } else {
+                        arr = c.asString().getBytes(LimboCast.DEFAULT_ENCODING);
+                    }
+                    sb.append(LimboVisitor.byteArrayToHex(arr));
+                    sb.append("'");
+                    break;
+                default:
+                    throw new AssertionError(c.getDataType());
             }
         }
     }
@@ -241,26 +242,26 @@ public class LimboToStringVisitor extends ToStringVisitor<LimboExpression> imple
     public void visit(Join join) {
         sb.append(" ");
         switch (join.getType()) {
-        case CROSS:
-            sb.append("CROSS");
-            break;
-        case INNER:
-            sb.append("INNER");
-            break;
-        case NATURAL:
-            sb.append("NATURAL");
-            break;
-        case OUTER:
-            sb.append("LEFT OUTER");
-            break;
-        case RIGHT:
-            sb.append("RIGHT OUTER");
-            break;
-        case FULL:
-            sb.append("FULL OUTER");
-            break;
-        default:
-            throw new AssertionError(join.getType());
+            case CROSS:
+                sb.append("CROSS");
+                break;
+            case INNER:
+                sb.append("INNER");
+                break;
+            case NATURAL:
+                sb.append("NATURAL");
+                break;
+            case OUTER:
+                sb.append("LEFT OUTER");
+                break;
+            case RIGHT:
+                sb.append("RIGHT OUTER");
+                break;
+            case FULL:
+                sb.append("FULL OUTER");
+                break;
+            default:
+                throw new AssertionError(join.getType());
         }
         sb.append(" JOIN ");
         sb.append(join.getTable().getName());
@@ -309,7 +310,10 @@ public class LimboToStringVisitor extends ToStringVisitor<LimboExpression> imple
             visit(op.getRightExpressionList());
             sb.append(")");
         } else {
-            if (op.getRightSelect() instanceof LimboExpression.LimboTableReference) {
+            if (
+                op.getRightSelect() instanceof
+                LimboExpression.LimboTableReference
+            ) {
                 visit(op.getRightSelect());
             } else {
                 sb.append("(");
@@ -484,14 +488,14 @@ public class LimboToStringVisitor extends ToStringVisitor<LimboExpression> imple
     @Override
     public void visit(LimboTableReference tableReference) {
         sb.append(tableReference.getTable().getName());
-        if (tableReference.getIndexedBy() == null) {
-            if (Randomly.getBooleanWithSmallProbability()) {
-                sb.append(" NOT INDEXED");
-            }
-        } else {
-            sb.append(" INDEXED BY ");
-            sb.append(tableReference.getIndexedBy());
-        }
+        // if (tableReference.getIndexedBy() == null) {
+        //     if (Randomly.getBooleanWithSmallProbability()) {
+        //         sb.append(" NOT INDEXED");
+        //     }
+        // } else {
+        //     sb.append(" INDEXED BY ");
+        //     sb.append(tableReference.getIndexedBy());
+        // }
     }
 
     private void visit(LimboExpression... expressions) {
@@ -534,7 +538,11 @@ public class LimboToStringVisitor extends ToStringVisitor<LimboExpression> imple
     public void visit(LimboValues values) {
         Map<String, List<LimboConstant>> vs = values.getValues();
         int size = vs.get(vs.keySet().iterator().next()).size();
-        List<String> columnNames = values.getColumns().stream().map(c -> c.getName()).collect(Collectors.toList());
+        List<String> columnNames = values
+            .getColumns()
+            .stream()
+            .map(c -> c.getName())
+            .collect(Collectors.toList());
         sb.append("(VALUES ");
         for (int i = 0; i < size; i++) {
             sb.append("(");
@@ -584,15 +592,24 @@ public class LimboToStringVisitor extends ToStringVisitor<LimboExpression> imple
         Map<String, List<LimboConstant>> vs = values.getValues();
         int size = vs.get(vs.keySet().iterator().next()).size();
         if (size == 0) {
-            throw new AssertionError("The result of the expression must not be empty.");
+            throw new AssertionError(
+                "The result of the expression must not be empty."
+            );
         }
-        List<String> columnNames = values.getColumns().stream().map(c -> c.getName()).collect(Collectors.toList());
+        List<String> columnNames = values
+            .getColumns()
+            .stream()
+            .map(c -> c.getName())
+            .collect(Collectors.toList());
         sb.append(" CASE ");
         for (int i = 0; i < size; i++) {
             sb.append("WHEN ");
             for (int j = 0; j < columnNames.size(); ++j) {
                 visit(columnRefs.get(j));
-                if (vs.get(columnNames.get(j)).get(i) instanceof LimboNullConstant) {
+                if (
+                    vs.get(columnNames.get(j)).get(i) instanceof
+                    LimboNullConstant
+                ) {
                     sb.append(" IS NULL");
                 } else {
                     sb.append(" = ");

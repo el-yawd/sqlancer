@@ -32,19 +32,6 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
      */
     public static final List<String> ROWID_STRINGS =
         Collections.unmodifiableList(Arrays.asList("rowid", "_rowid_", "oid"));
-    private final List<String> indexNames;
-
-    public List<String> getIndexNames() {
-        return indexNames;
-    }
-
-    public String getRandomIndexOrBailout() {
-        if (indexNames.isEmpty()) {
-            throw new IgnoreMeException();
-        } else {
-            return Randomly.fromList(indexNames);
-        }
-    }
 
     public static class LimboColumn
         extends AbstractTableColumn<LimboTable, LimboDataType> {
@@ -323,7 +310,6 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
         List<String> indexNames
     ) {
         super(databaseTables);
-        this.indexNames = indexNames;
     }
 
     @Override
@@ -348,6 +334,11 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
                     "SELECT name, type as category, sql FROM sqlite_schema;"
                 )
             ) {
+                for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+                    System.out.println(
+                        "Column " + i + ": " + rs.getMetaData().getColumnName(i)
+                    );
+                }
                 while (rs.next()) {
                     String tableName = rs.getString("name");
                     String tableType = rs.getString("category");
@@ -421,9 +412,11 @@ public class LimboSchema extends AbstractSchema<LimboGlobalState, LimboTable> {
                     for (LimboColumn c : databaseColumns) {
                         c.setTable(t);
                     }
+                    System.out.println("Table created: " + t.getName());
                     databaseTables.add(t);
                 }
             } catch (SQLException e) {
+                System.out.println(e);
                 // ignore
             }
             try (

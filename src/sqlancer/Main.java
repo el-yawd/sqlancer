@@ -1,5 +1,7 @@
 package sqlancer;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.JCommander.Builder;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,10 +21,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.JCommander.Builder;
-
 import sqlancer.citus.CitusProvider;
 import sqlancer.clickhouse.ClickHouseProvider;
 import sqlancer.cnosdb.CnosDBProvider;
@@ -36,6 +34,7 @@ import sqlancer.duckdb.DuckDBProvider;
 import sqlancer.h2.H2Provider;
 import sqlancer.hive.HiveProvider;
 import sqlancer.hsqldb.HSQLDBProvider;
+import sqlancer.limbo.LimboProvider;
 import sqlancer.mariadb.MariaDBProvider;
 import sqlancer.materialize.MaterializeProvider;
 import sqlancer.mysql.MySQLProvider;
@@ -44,7 +43,6 @@ import sqlancer.postgres.PostgresProvider;
 import sqlancer.presto.PrestoProvider;
 import sqlancer.questdb.QuestDBProvider;
 import sqlancer.sqlite3.SQLite3Provider;
-import sqlancer.limbo.LimboProvider;
 import sqlancer.tidb.TiDBProvider;
 import sqlancer.yugabyte.ycql.YCQLProvider;
 import sqlancer.yugabyte.ysql.YSQLProvider;
@@ -60,14 +58,16 @@ public final class Main {
     static boolean progressMonitorStarted;
 
     static {
-        System.setProperty(org.slf4j.simple.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
+        System.setProperty(
+            org.slf4j.simple.SimpleLogger.DEFAULT_LOG_LEVEL_KEY,
+            "ERROR"
+        );
         if (!LOG_DIRECTORY.exists()) {
             LOG_DIRECTORY.mkdir();
         }
     }
 
-    private Main() {
-    }
+    private Main() {}
 
     public static final class StateLogger {
 
@@ -80,14 +80,16 @@ public final class Main {
         private FileWriter queryPlanFileWriter;
         private FileWriter reduceFileWriter;
 
-        private static final List<String> INITIALIZED_PROVIDER_NAMES = new ArrayList<>();
+        private static final List<String> INITIALIZED_PROVIDER_NAMES =
+            new ArrayList<>();
         private final boolean logEachSelect;
         private final boolean logQueryPlan;
 
         private final boolean useReducer;
         private final DatabaseProvider<?, ?, ?> databaseProvider;
 
-        private static final class AlsoWriteToConsoleFileWriter extends FileWriter {
+        private static final class AlsoWriteToConsoleFileWriter
+            extends FileWriter {
 
             AlsoWriteToConsoleFileWriter(File file) throws IOException {
                 super(file);
@@ -106,7 +108,11 @@ public final class Main {
             }
         }
 
-        public StateLogger(String databaseName, DatabaseProvider<?, ?, ?> provider, MainOptions options) {
+        public StateLogger(
+            String databaseName,
+            DatabaseProvider<?, ?, ?> provider,
+            MainOptions options
+        ) {
             File dir = new File(LOG_DIRECTORY, provider.getDBMSName());
             if (dir.exists() && !dir.isDirectory()) {
                 throw new AssertionError(dir);
@@ -127,13 +133,18 @@ public final class Main {
                 if (!reduceFileDir.exists()) {
                     reduceFileDir.mkdir();
                 }
-                this.reduceFile = new File(reduceFileDir, databaseName + "-reduce.log");
-
+                this.reduceFile = new File(
+                    reduceFileDir,
+                    databaseName + "-reduce.log"
+                );
             }
             this.databaseProvider = provider;
         }
 
-        private void ensureExistsAndIsEmpty(File dir, DatabaseProvider<?, ?, ?> provider) {
+        private void ensureExistsAndIsEmpty(
+            File dir,
+            DatabaseProvider<?, ?, ?> provider
+        ) {
             if (INITIALIZED_PROVIDER_NAMES.contains(provider.getDBMSName())) {
                 return;
             }
@@ -146,7 +157,8 @@ public final class Main {
                     }
                 }
                 File[] listFiles = dir.listFiles();
-                assert listFiles != null : "directory was just created, so it should exist";
+                assert listFiles !=
+                null : "directory was just created, so it should exist";
                 for (File file : listFiles) {
                     if (!file.isDirectory()) {
                         file.delete();
@@ -159,7 +171,9 @@ public final class Main {
         private FileWriter getLogFileWriter() {
             if (logFileWriter == null) {
                 try {
-                    logFileWriter = new AlsoWriteToConsoleFileWriter(loggerFile);
+                    logFileWriter = new AlsoWriteToConsoleFileWriter(
+                        loggerFile
+                    );
                 } catch (IOException e) {
                     throw new AssertionError(e);
                 }
@@ -216,7 +230,6 @@ public final class Main {
             printState(getCurrentFileWriter(), state);
             try {
                 currentFileWriter.flush();
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -227,7 +240,11 @@ public final class Main {
         }
 
         public void writeCurrentNoLineBreak(String input) {
-            write(databaseProvider.getLoggableFactory().createLoggableWithNoLinebreak(input));
+            write(
+                databaseProvider
+                    .getLoggableFactory()
+                    .createLoggableWithNoLinebreak(input)
+            );
         }
 
         private void write(Loggable loggable) {
@@ -248,7 +265,8 @@ public final class Main {
                 throw new UnsupportedOperationException();
             }
             try {
-                getQueryPlanFileWriter().append(removeNamesFromQueryPlans(queryPlan));
+                getQueryPlanFileWriter()
+                    .append(removeNamesFromQueryPlans(queryPlan));
                 queryPlanFileWriter.flush();
             } catch (IOException e) {
                 throw new AssertionError();
@@ -280,11 +298,15 @@ public final class Main {
 
             StringBuilder sb = new StringBuilder();
             for (Query<?> s : state.getStatements()) {
-                sb.append(databaseProvider.getLoggableFactory().createLoggable(s.getLogString()).getLogString());
+                sb.append(
+                    databaseProvider
+                        .getLoggableFactory()
+                        .createLoggable(s.getLogString())
+                        .getLogString()
+                );
             }
             try {
                 reduceFileWriter.write(sb.toString());
-
             } catch (IOException e) {
                 throw new AssertionError(e);
             } finally {
@@ -295,7 +317,6 @@ public final class Main {
                     e.printStackTrace();
                 }
             }
-
         }
 
         public void logException(Throwable reduce, StateToReproduce state) {
@@ -316,17 +337,32 @@ public final class Main {
         }
 
         private Loggable getStackTrace(Throwable e1) {
-            return databaseProvider.getLoggableFactory().convertStacktraceToLoggable(e1);
+            return databaseProvider
+                .getLoggableFactory()
+                .convertStacktraceToLoggable(e1);
         }
 
         private void printState(FileWriter writer, StateToReproduce state) {
             StringBuilder sb = new StringBuilder();
 
-            sb.append(databaseProvider.getLoggableFactory()
-                    .getInfo(state.getDatabaseName(), state.getDatabaseVersion(), state.getSeedValue()).getLogString());
+            sb.append(
+                databaseProvider
+                    .getLoggableFactory()
+                    .getInfo(
+                        state.getDatabaseName(),
+                        state.getDatabaseVersion(),
+                        state.getSeedValue()
+                    )
+                    .getLogString()
+            );
 
             for (Query<?> s : state.getStatements()) {
-                sb.append(databaseProvider.getLoggableFactory().createLoggable(s.getLogString()).getLogString());
+                sb.append(
+                    databaseProvider
+                        .getLoggableFactory()
+                        .createLoggable(s.getLogString())
+                        .getLogString()
+                );
             }
             try {
                 writer.write(sb.toString());
@@ -362,7 +398,8 @@ public final class Main {
             return success;
         }
 
-        public SQLancerResultSet executeAndGet(Query<C> q, String... fills) throws Exception {
+        public SQLancerResultSet executeAndGet(Query<C> q, String... fills)
+            throws Exception {
             globalState.getState().logStatement(q);
             SQLancerResultSet result;
             result = q.executeAndGet(globalState, fills);
@@ -381,14 +418,17 @@ public final class Main {
         public void incrementCreateDatabase() {
             Main.nrDatabases.addAndGet(1);
         }
-
     }
 
     public static void main(String[] args) {
         System.exit(executeMain(args));
     }
 
-    public static class DBMSExecutor<G extends GlobalState<O, ?, C>, O extends DBMSSpecificOptions<?>, C extends SQLancerDBConnection> {
+    public static class DBMSExecutor<
+        G extends GlobalState<O, ?, C>,
+        O extends DBMSSpecificOptions<?>,
+        C extends SQLancerDBConnection
+    > {
 
         private final DatabaseProvider<G, O, C> provider;
         private final MainOptions options;
@@ -398,8 +438,13 @@ public final class Main {
         private StateToReproduce stateToRepro;
         private final Randomly r;
 
-        public DBMSExecutor(DatabaseProvider<G, O, C> provider, MainOptions options, O dbmsSpecificOptions,
-                String databaseName, Randomly r) {
+        public DBMSExecutor(
+            DatabaseProvider<G, O, C> provider,
+            MainOptions options,
+            O dbmsSpecificOptions,
+            String databaseName,
+            Randomly r
+        ) {
             this.provider = provider;
             this.options = options;
             this.databaseName = databaseName;
@@ -409,7 +454,10 @@ public final class Main {
 
         private G createGlobalState() {
             try {
-                return provider.getGlobalStateClass().getDeclaredConstructor().newInstance();
+                return provider
+                    .getGlobalStateClass()
+                    .getDeclaredConstructor()
+                    .newInstance();
             } catch (Exception e) {
                 throw new AssertionError(e);
             }
@@ -451,7 +499,9 @@ public final class Main {
                 }
                 Reproducer<G> reproducer = null;
                 if (options.enableQPG()) {
-                    provider.generateAndTestDatabaseWithQueryPlanGuidance(state);
+                    provider.generateAndTestDatabaseWithQueryPlanGuidance(
+                        state
+                    );
                 } else {
                     reproducer = provider.generateAndTestDatabase(state);
                 }
@@ -463,11 +513,17 @@ public final class Main {
                 }
 
                 if (options.reduceAST() && !options.useReducer()) {
-                    throw new AssertionError("To reduce AST, use-reducer option must be enabled first");
+                    throw new AssertionError(
+                        "To reduce AST, use-reducer option must be enabled first"
+                    );
                 }
                 if (options.useReducer()) {
                     if (reproducer == null) {
-                        logger.getReduceFileWriter().write("current oracle does not support experimental reducer.");
+                        logger
+                            .getReduceFileWriter()
+                            .write(
+                                "current oracle does not support experimental reducer."
+                            );
                         throw new IgnoreMeException();
                     }
                     G newGlobalState = createGlobalState();
@@ -476,16 +532,26 @@ public final class Main {
                     newGlobalState.setDatabaseName(databaseName);
                     newGlobalState.setMainOptions(options);
                     newGlobalState.setDbmsSpecificOptions(command);
-                    QueryManager<C> newManager = new QueryManager<>(newGlobalState);
-                    newGlobalState.setStateLogger(new StateLogger(databaseName, provider, options));
+                    QueryManager<C> newManager = new QueryManager<>(
+                        newGlobalState
+                    );
+                    newGlobalState.setStateLogger(
+                        new StateLogger(databaseName, provider, options)
+                    );
                     newGlobalState.setManager(newManager);
 
                     Reducer<G> reducer = new StatementReducer<>(provider);
                     reducer.reduce(state, reproducer, newGlobalState);
 
                     if (options.reduceAST()) {
-                        Reducer<G> astBasedReducer = new ASTBasedReducer<>(provider);
-                        astBasedReducer.reduce(state, reproducer, newGlobalState);
+                        Reducer<G> astBasedReducer = new ASTBasedReducer<>(
+                            provider
+                        );
+                        astBasedReducer.reduce(
+                            state,
+                            reproducer,
+                            newGlobalState
+                        );
                     }
 
                     try {
@@ -495,7 +561,9 @@ public final class Main {
                         throw new AssertionError(e);
                     }
 
-                    throw new AssertionError("Found a potential bug, please check reducer log for detail.");
+                    throw new AssertionError(
+                        "Found a potential bug, please check reducer log for detail."
+                    );
                 }
             }
         }
@@ -523,13 +591,20 @@ public final class Main {
         }
     }
 
-    public static class DBMSExecutorFactory<G extends GlobalState<O, ?, C>, O extends DBMSSpecificOptions<?>, C extends SQLancerDBConnection> {
+    public static class DBMSExecutorFactory<
+        G extends GlobalState<O, ?, C>,
+        O extends DBMSSpecificOptions<?>,
+        C extends SQLancerDBConnection
+    > {
 
         private final DatabaseProvider<G, O, C> provider;
         private final MainOptions options;
         private final O command;
 
-        public DBMSExecutorFactory(DatabaseProvider<G, O, C> provider, MainOptions options) {
+        public DBMSExecutorFactory(
+            DatabaseProvider<G, O, C> provider,
+            MainOptions options
+        ) {
             this.provider = provider;
             this.options = options;
             this.command = createCommand();
@@ -537,7 +612,10 @@ public final class Main {
 
         private O createCommand() {
             try {
-                return provider.getOptionClass().getDeclaredConstructor().newInstance();
+                return provider
+                    .getOptionClass()
+                    .getDeclaredConstructor()
+                    .newInstance();
             } catch (Exception e) {
                 throw new AssertionError(e);
             }
@@ -548,10 +626,18 @@ public final class Main {
         }
 
         @SuppressWarnings("unchecked")
-        public DBMSExecutor<G, O, C> getDBMSExecutor(String databaseName, Randomly r) {
+        public DBMSExecutor<G, O, C> getDBMSExecutor(
+            String databaseName,
+            Randomly r
+        ) {
             try {
-                return new DBMSExecutor<G, O, C>(provider.getClass().getDeclaredConstructor().newInstance(), options,
-                        command, databaseName, r);
+                return new DBMSExecutor<G, O, C>(
+                    provider.getClass().getDeclaredConstructor().newInstance(),
+                    options,
+                    command,
+                    databaseName,
+                    r
+                );
             } catch (Exception e) {
                 throw new AssertionError(e);
             }
@@ -560,18 +646,22 @@ public final class Main {
         public DatabaseProvider<G, O, C> getProvider() {
             return provider;
         }
-
     }
 
     public static int executeMain(String... args) throws AssertionError {
         List<DatabaseProvider<?, ?, ?>> providers = getDBMSProviders();
-        Map<String, DBMSExecutorFactory<?, ?, ?>> nameToProvider = new HashMap<>();
+        Map<String, DBMSExecutorFactory<?, ?, ?>> nameToProvider =
+            new HashMap<>();
         MainOptions options = new MainOptions();
         Builder commandBuilder = JCommander.newBuilder().addObject(options);
         for (DatabaseProvider<?, ?, ?> provider : providers) {
             String name = provider.getDBMSName();
-            DBMSExecutorFactory<?, ?, ?> executorFactory = new DBMSExecutorFactory<>(provider, options);
-            commandBuilder = commandBuilder.addCommand(name, executorFactory.getCommand());
+            DBMSExecutorFactory<?, ?, ?> executorFactory =
+                new DBMSExecutorFactory<>(provider, options);
+            commandBuilder = commandBuilder.addCommand(
+                name,
+                executorFactory.getCommand()
+            );
             nameToProvider.put(name, executorFactory);
         }
         JCommander jc = commandBuilder.programName("SQLancer").build();
@@ -586,41 +676,75 @@ public final class Main {
         if (options.printProgressInformation()) {
             startProgressMonitor();
             if (options.printProgressSummary()) {
-                Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                Runtime.getRuntime()
+                    .addShutdownHook(
+                        new Thread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    System.out.println(
+                                        "Overall execution statistics"
+                                    );
+                                    System.out.println(
+                                        "============================"
+                                    );
+                                    System.out.println(
+                                        formatInteger(nrQueries.get()) +
+                                        " queries"
+                                    );
+                                    System.out.println(
+                                        formatInteger(nrDatabases.get()) +
+                                        " databases"
+                                    );
+                                    System.out.println(
+                                        formatInteger(
+                                            nrSuccessfulActions.get()
+                                        ) +
+                                        " successfully-executed statements"
+                                    );
+                                    System.out.println(
+                                        formatInteger(
+                                            nrUnsuccessfulActions.get()
+                                        ) +
+                                        " unsuccessfully-executed statements"
+                                    );
+                                }
 
-                    @Override
-                    public void run() {
-                        System.out.println("Overall execution statistics");
-                        System.out.println("============================");
-                        System.out.println(formatInteger(nrQueries.get()) + " queries");
-                        System.out.println(formatInteger(nrDatabases.get()) + " databases");
-                        System.out.println(
-                                formatInteger(nrSuccessfulActions.get()) + " successfully-executed statements");
-                        System.out.println(
-                                formatInteger(nrUnsuccessfulActions.get()) + " unsuccessfully-executed statements");
-                    }
-
-                    private String formatInteger(long intValue) {
-                        if (intValue > 1000) {
-                            return String.format("%,9dk", intValue / 1000);
-                        } else {
-                            return String.format("%,10d", intValue);
-                        }
-                    }
-                }));
+                                private String formatInteger(long intValue) {
+                                    if (intValue > 1000) {
+                                        return String.format(
+                                            "%,9dk",
+                                            intValue / 1000
+                                        );
+                                    } else {
+                                        return String.format("%,10d", intValue);
+                                    }
+                                }
+                            }
+                        )
+                    );
             }
         }
 
-        ExecutorService execService = Executors.newFixedThreadPool(options.getNumberConcurrentThreads());
-        DBMSExecutorFactory<?, ?, ?> executorFactory = nameToProvider.get(jc.getParsedCommand());
+        ExecutorService execService = Executors.newFixedThreadPool(
+            options.getNumberConcurrentThreads()
+        );
+        DBMSExecutorFactory<?, ?, ?> executorFactory = nameToProvider.get(
+            jc.getParsedCommand()
+        );
 
         if (options.performConnectionTest()) {
             try {
-                executorFactory.getDBMSExecutor(options.getDatabasePrefix() + "connectiontest", new Randomly())
-                        .testConnection();
+                executorFactory
+                    .getDBMSExecutor(
+                        options.getDatabasePrefix() + "connectiontest",
+                        new Randomly()
+                    )
+                    .testConnection();
             } catch (Exception e) {
                 System.err.println(
-                        "SQLancer failed creating a test database, indicating that SQLancer might have failed connecting to the DBMS. In order to change the username, password, host and port, you can use the --username, --password, --host and --port options.\n\n");
+                    "SQLancer failed creating a test database, indicating that SQLancer might have failed connecting to the DBMS. In order to change the username, password, host and port, you can use the --username, --password, --host and --port options.\n\n"
+                );
                 e.printStackTrace();
                 return options.getErrorExitCode();
             }
@@ -635,68 +759,104 @@ public final class Main {
             } else {
                 seed = options.getRandomSeed() + i;
             }
-            execService.execute(new Runnable() {
-
-                @Override
-                public void run() {
-                    Thread.currentThread().setName(databaseName);
-                    runThread(databaseName);
-                }
-
-                private void runThread(final String databaseName) {
-                    Randomly r = new Randomly(seed);
-                    try {
-                        int maxNrDbs = options.getMaxGeneratedDatabases();
-                        // run without a limit if maxNrDbs == -1
-                        for (int i = 0; i < maxNrDbs || maxNrDbs == -1; i++) {
-                            Boolean continueRunning = run(options, execService, executorFactory, r, databaseName);
-                            if (!continueRunning) {
-                                someOneFails.set(true);
-                                break;
-                            }
-                        }
-                    } finally {
-                        threadsShutdown.addAndGet(1);
-                        if (threadsShutdown.get() == options.getTotalNumberTries()) {
-                            execService.shutdown();
-                        }
+            execService.execute(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        Thread.currentThread().setName(databaseName);
+                        runThread(databaseName);
                     }
-                }
 
-                private boolean run(MainOptions options, ExecutorService execService,
-                        DBMSExecutorFactory<?, ?, ?> executorFactory, Randomly r, final String databaseName) {
-                    DBMSExecutor<?, ?, ?> executor = executorFactory.getDBMSExecutor(databaseName, r);
-                    try {
-                        executor.run();
-                        return true;
-                    } catch (IgnoreMeException e) {
-                        return true;
-                    } catch (Throwable reduce) {
-                        reduce.printStackTrace();
-                        executor.getStateToReproduce().exception = reduce.getMessage();
-                        executor.getLogger().logFileWriter = null;
-                        executor.getLogger().logException(reduce, executor.getStateToReproduce());
-                        return false;
-                    } finally {
+                    private void runThread(final String databaseName) {
+                        Randomly r = new Randomly(seed);
                         try {
-                            if (options.logEachSelect()) {
-                                if (executor.getLogger().currentFileWriter != null) {
-                                    executor.getLogger().currentFileWriter.close();
+                            int maxNrDbs = options.getMaxGeneratedDatabases();
+                            // run without a limit if maxNrDbs == -1
+                            for (
+                                int i = 0;
+                                i < maxNrDbs || maxNrDbs == -1;
+                                i++
+                            ) {
+                                Boolean continueRunning = run(
+                                    options,
+                                    execService,
+                                    executorFactory,
+                                    r,
+                                    databaseName
+                                );
+                                if (!continueRunning) {
+                                    someOneFails.set(true);
+                                    break;
                                 }
-                                executor.getLogger().currentFileWriter = null;
                             }
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                        } finally {
+                            threadsShutdown.addAndGet(1);
+                            if (
+                                threadsShutdown.get() ==
+                                options.getTotalNumberTries()
+                            ) {
+                                execService.shutdown();
+                            }
+                        }
+                    }
+
+                    private boolean run(
+                        MainOptions options,
+                        ExecutorService execService,
+                        DBMSExecutorFactory<?, ?, ?> executorFactory,
+                        Randomly r,
+                        final String databaseName
+                    ) {
+                        DBMSExecutor<?, ?, ?> executor =
+                            executorFactory.getDBMSExecutor(databaseName, r);
+                        try {
+                            executor.run();
+                            return true;
+                        } catch (IgnoreMeException e) {
+                            return true;
+                        } catch (Throwable reduce) {
+                            reduce.printStackTrace();
+                            executor.getStateToReproduce().exception =
+                                reduce.getMessage();
+                            executor.getLogger().logFileWriter = null;
+                            executor
+                                .getLogger()
+                                .logException(
+                                    reduce,
+                                    executor.getStateToReproduce()
+                                );
+                            return false;
+                        } finally {
+                            try {
+                                if (options.logEachSelect()) {
+                                    if (
+                                        executor.getLogger()
+                                            .currentFileWriter !=
+                                        null
+                                    ) {
+                                        executor
+                                            .getLogger()
+                                            .currentFileWriter.close();
+                                    }
+                                    executor.getLogger().currentFileWriter =
+                                        null;
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
-            });
+            );
         }
         try {
             if (options.getTimeoutSeconds() == -1) {
                 execService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
             } else {
-                execService.awaitTermination(options.getTimeoutSeconds(), TimeUnit.SECONDS);
+                execService.awaitTermination(
+                    options.getTimeoutSeconds(),
+                    TimeUnit.SECONDS
+                );
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -720,7 +880,9 @@ public final class Main {
     static List<DatabaseProvider<?, ?, ?>> getDBMSProviders() {
         List<DatabaseProvider<?, ?, ?>> providers = new ArrayList<>();
         @SuppressWarnings("rawtypes")
-        ServiceLoader<DatabaseProvider> loader = ServiceLoader.load(DatabaseProvider.class);
+        ServiceLoader<DatabaseProvider> loader = ServiceLoader.load(
+            DatabaseProvider.class
+        );
         for (DatabaseProvider<?, ?, ?> provider : loader) {
             providers.add(provider);
         }
@@ -729,10 +891,13 @@ public final class Main {
     }
 
     // see https://github.com/sqlancer/sqlancer/issues/799
-    private static void checkForIssue799(List<DatabaseProvider<?, ?, ?>> providers) {
+    private static void checkForIssue799(
+        List<DatabaseProvider<?, ?, ?>> providers
+    ) {
         if (providers.isEmpty()) {
             System.err.println(
-                    "No DBMS implementations (i.e., instantiations of the DatabaseProvider class) were found. You likely ran into an issue described in https://github.com/sqlancer/sqlancer/issues/799. As a workaround, I now statically load all supported providers as of June 7, 2023.");
+                "No DBMS implementations (i.e., instantiations of the DatabaseProvider class) were found. You likely ran into an issue described in https://github.com/sqlancer/sqlancer/issues/799. As a workaround, I now statically load all supported providers as of June 7, 2023."
+            );
             providers.add(new CitusProvider());
             providers.add(new ClickHouseProvider());
             providers.add(new CnosDBProvider());
@@ -769,39 +934,57 @@ public final class Main {
         } else {
             progressMonitorStarted = true;
         }
-        final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(new Runnable() {
+        final ScheduledExecutorService scheduler =
+            Executors.newScheduledThreadPool(1);
+        scheduler.scheduleAtFixedRate(
+            new Runnable() {
+                private long timeMillis = System.currentTimeMillis();
+                private long lastNrQueries;
+                private long lastNrDbs;
 
-            private long timeMillis = System.currentTimeMillis();
-            private long lastNrQueries;
-            private long lastNrDbs;
+                {
+                    timeMillis = System.currentTimeMillis();
+                }
 
-            {
-                timeMillis = System.currentTimeMillis();
-            }
-
-            @Override
-            public void run() {
-                long elapsedTimeMillis = System.currentTimeMillis() - timeMillis;
-                long currentNrQueries = nrQueries.get();
-                long nrCurrentQueries = currentNrQueries - lastNrQueries;
-                double throughput = nrCurrentQueries / (elapsedTimeMillis / 1000d);
-                long currentNrDbs = nrDatabases.get();
-                long nrCurrentDbs = currentNrDbs - lastNrDbs;
-                double throughputDbs = nrCurrentDbs / (elapsedTimeMillis / 1000d);
-                long successfulStatementsRatio = (long) (100.0 * nrSuccessfulActions.get()
-                        / (nrSuccessfulActions.get() + nrUnsuccessfulActions.get()));
-                DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-                Date date = new Date();
-                System.out.println(String.format(
-                        "[%s] Executed %d queries (%d queries/s; %.2f/s dbs, successful statements: %2d%%). Threads shut down: %d.",
-                        dateFormat.format(date), currentNrQueries, (int) throughput, throughputDbs,
-                        successfulStatementsRatio, threadsShutdown.get()));
-                timeMillis = System.currentTimeMillis();
-                lastNrQueries = currentNrQueries;
-                lastNrDbs = currentNrDbs;
-            }
-        }, 5, 5, TimeUnit.SECONDS);
+                @Override
+                public void run() {
+                    long elapsedTimeMillis =
+                        System.currentTimeMillis() - timeMillis;
+                    long currentNrQueries = nrQueries.get();
+                    long nrCurrentQueries = currentNrQueries - lastNrQueries;
+                    double throughput =
+                        nrCurrentQueries / (elapsedTimeMillis / 1000d);
+                    long currentNrDbs = nrDatabases.get();
+                    long nrCurrentDbs = currentNrDbs - lastNrDbs;
+                    double throughputDbs =
+                        nrCurrentDbs / (elapsedTimeMillis / 1000d);
+                    long successfulStatementsRatio = (long) ((100.0 *
+                            nrSuccessfulActions.get()) /
+                        (nrSuccessfulActions.get() +
+                            nrUnsuccessfulActions.get()));
+                    DateFormat dateFormat = new SimpleDateFormat(
+                        "yyyy/MM/dd HH:mm:ss"
+                    );
+                    Date date = new Date();
+                    System.out.println(
+                        String.format(
+                            "[%s] Executed %d queries (%d queries/s; %.2f/s dbs, successful statements: %2d%%). Threads shut down: %d.",
+                            dateFormat.format(date),
+                            currentNrQueries,
+                            (int) throughput,
+                            throughputDbs,
+                            successfulStatementsRatio,
+                            threadsShutdown.get()
+                        )
+                    );
+                    timeMillis = System.currentTimeMillis();
+                    lastNrQueries = currentNrQueries;
+                    lastNrDbs = currentNrDbs;
+                }
+            },
+            5,
+            5,
+            TimeUnit.SECONDS
+        );
     }
-
 }

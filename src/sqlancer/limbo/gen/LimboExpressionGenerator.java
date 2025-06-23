@@ -876,19 +876,7 @@ public class LimboExpressionGenerator
     public List<LimboExpression> getTableRefs() {
         List<LimboExpression> tableRefs = new ArrayList<>();
         for (LimboTable t : targetTables) {
-            LimboTableReference tableRef;
-            if (
-                Randomly.getBooleanWithSmallProbability() &&
-                !globalState.getSchema().getIndexNames().isEmpty()
-            ) {
-                tableRef = new LimboTableReference(
-                    globalState.getSchema().getRandomIndexOrBailout(),
-                    t
-                );
-            } else {
-                tableRef = new LimboTableReference(t);
-            }
-            tableRefs.add(tableRef);
+            tableRefs.add(new LimboTableReference(t));
         }
         return tableRefs;
     }

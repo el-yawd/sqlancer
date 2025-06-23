@@ -14,14 +14,12 @@ public class LimboColumnBuilder {
     private boolean conflictClauseInserted;
 
     private boolean allowPrimaryKey = true;
-    private boolean allowUnique = true;
+    private boolean allowUnique = false;
     private boolean allowDefaultValue = true;
     private boolean allowNotNull = true;
 
     private enum Constraints {
         NOT_NULL,
-        PRIMARY_KEY,
-        UNIQUE,
     }
 
     public boolean isContainsAutoIncrement() {
@@ -59,34 +57,6 @@ public class LimboColumnBuilder {
 
             for (Constraints c : constraints) {
                 switch (c) {
-                    case PRIMARY_KEY:
-                        // only one primary key is allow if not specified as table constraint
-                        if (allowPrimaryKey) {
-                            sb.append(" PRIMARY KEY");
-                            containsPrimaryKey = true;
-                            boolean hasOrdering = Randomly.getBoolean();
-                            if (hasOrdering) {
-                                if (Randomly.getBoolean()) {
-                                    sb.append(" ASC");
-                                } else {
-                                    sb.append(" DESC");
-                                }
-                            }
-                            if (
-                                !hasOrdering &&
-                                dataType.equals("INTEGER") &&
-                                Randomly.getBoolean()
-                            ) {
-                                containsAutoIncrement = true;
-                                sb.append(" AUTOINCREMENT");
-                            }
-                        }
-                        break;
-                    case UNIQUE:
-                        if (allowUnique) {
-                            sb.append(" UNIQUE");
-                        }
-                        break;
                     case NOT_NULL:
                         if (allowNotNull) {
                             sb.append(" NOT NULL");
