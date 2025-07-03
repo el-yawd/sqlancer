@@ -34,7 +34,7 @@ import sqlancer.duckdb.DuckDBProvider;
 import sqlancer.h2.H2Provider;
 import sqlancer.hive.HiveProvider;
 import sqlancer.hsqldb.HSQLDBProvider;
-import sqlancer.limbo.LimboProvider;
+import sqlancer.turso.TursoProvider;
 import sqlancer.mariadb.MariaDBProvider;
 import sqlancer.materialize.MaterializeProvider;
 import sqlancer.mysql.MySQLProvider;
@@ -916,7 +916,7 @@ public final class Main {
             providers.add(new PostgresProvider());
             providers.add(new QuestDBProvider());
             providers.add(new SQLite3Provider());
-            providers.add(new LimboProvider());
+            providers.add(new TursoProvider());
             providers.add(new TiDBProvider());
             providers.add(new YCQLProvider());
             providers.add(new YSQLProvider());
